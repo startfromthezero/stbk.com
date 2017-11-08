@@ -1,0 +1,21 @@
+<?php
+// Heading
+$_['heading_title'] = '控制面板';
+
+// Text
+$_['org_topup_stats']   = '机构充值统计';
+$_['text_org_name']     = '机构名称';
+$_['text_pay_type']     = '付款方式';
+$_['text_paid_log']     = '已付款记录';
+$_['text_nopaid_log']   = '未付款记录';
+$_['text_paid_total']   = '已付款金额';
+$_['text_nopaid_total'] = '未付款金额';
+
+// Error
+$_['error_install']     = '系统提示： 安装目录尚未删除,出于安全原因，应予以删除！';
+$_['error_image']       = '系统提示： 图片目录%s 不可写！';
+$_['error_image_cache'] = '系统提示： 图片缓存目录%s 不可写！';
+$_['error_cache']       = '系统提示： 缓存目录%s 不可写！';
+$_['error_download']    = '系统提示： 下载目录%s 不可写！';
+$_['error_logs']        = '系统提示： 日志目录%s 不可写！';
+?>

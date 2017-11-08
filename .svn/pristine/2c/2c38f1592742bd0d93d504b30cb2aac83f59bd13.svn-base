@@ -1,0 +1,27 @@
+<?php echo $page_header; ?>
+<div class="body" style="background-color:#ebebeb;margin:0 auto;height:100%;">
+	<div class="ICCID_conten">
+		<div style="overflow: hidden;">
+			<div class="ICCID_img"><img src="/img/app/ICCID_img.png" /></div>
+			<input type="text" placeholder="请输入ICCID或流量卡号码">
+		</div>
+		<p>亲,查不到这个号码，请确定是否输入有误~</p>
+		<p>	1.如果您是手动输入，请您输入ICCID前19位数字；</p>
+		<p>	2.如果您是扫码输入，请您确定是云智易联流量卡。</p>
+		<div class="buttons">
+			<a class="button ICCID_look">
+				查询
+			</a>
+		</div>
+		<div class="buttons ICCID_mt">
+			<a class="button ICCID_saoma">
+				扫码
+			</a>
+		</div>
+	</div>
+	<p  style="color:#93918f;margin-top:20px;font-weight: bold;text-align:center;}">温馨提示:系统自动记住您最近查询成功的号码</p>
+	<div class="ICCID_sweep_card"><img src="/img/app/ICCID_sweep_card.png" /></div>
+	<p style="color:#93918f;margin:20px 0px;font-weight: bold;text-align:center;}">点击"扫码",对着流量卡的条形码扫一扫</p>
+</div>
+
+<?php echo $page_footer; ?>

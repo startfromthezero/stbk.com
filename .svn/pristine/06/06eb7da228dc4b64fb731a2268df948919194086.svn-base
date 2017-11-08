@@ -1,0 +1,103 @@
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<div id="main" style="height:400px;"></div><!-- ECharts单文件引入 -->
+<script type="text/javascript">
+	// 路径配置
+	require.config({
+		paths: {
+			echarts: 'http://echarts.baidu.com/build/dist'
+		}
+	});
+
+	// 使用
+	require(
+			[
+				'echarts',
+				'echarts/chart/bar' // 使用柱状图就加载bar模块，按需加载
+			],
+			function (ec)
+			{
+				// 基于准备好的dom，初始化echarts图表
+				var myChart = ec.init(document.getElementById('main'));
+
+				var option = {
+					timeline: {
+						realtime:true,
+						data : <?php echo $month; ?>,
+						label : {
+							formatter : function(s) {
+							return s.slice(0, 7);
+							}
+						},
+						type:'time',
+						currentIndex : 8,
+						playInterval : 1000
+					},
+					options : [
+						{
+							title     : {
+								'text'   : '<?php echo $last_month; ?>流量使用情况',
+							},
+							tooltip   : {'trigger':'axis'},
+							legend    : {
+								x         : 'center',
+								'data'    : ['月使用流量', '月超标流量'],
+								'selected': {
+									'月使用流量': true,
+									'月超标流量': true
+								}
+							},
+							toolbox   : {
+								'show'   : true,
+								x        : 'right',
+								'feature': {
+									'mark'       :{'show':true},
+									'dataView'   :{'show':true,'readOnly':false},
+									'magicType'  :{'show':true,'type':['stack','tiled']},
+									'restore'    :{'show':true},
+									'saveAsImage':{'show':true}
+								}
+							},
+							calculable: true,
+							grid      : {'y':80,'y2':100},
+							xAxis     :
+								{
+									'type'     : 'category',
+									'data'     : <?php echo $last_orgs; ?>
+								},
+							yAxis     : [
+								{
+									'type': 'value',
+									'name': '月使用流量（MB）',
+								},
+								{
+									'type': 'value',
+									'name': '月超标流量（MB）'
+								}
+							],
+							series    : [
+								{
+									'name'    : '月使用流量',
+									'type'    : 'bar',
+									'data'    : <?php echo $last_used; ?>
+								},
+								{
+									'name': '月超标流量', 'yAxisIndex': 1, 'type': 'bar',
+									'data': <?php echo $last_over; ?>
+								}
+							]
+						},
+						<?php if(isset($options)) { foreach ($options as $v) { echo $v; } } ?>
+					]
+				};
+					myChart.setOption(option);
+					var ecConfig = require('echarts/config');
+					myChart.on(ecConfig.EVENT.TIMELINE_CHANGED, function(paramA,paramB){
+					var option=myChart.getOption();
+					option.xAxis[0].data=paramB.component.timeline.options[paramA.currentIndex].xAxis.data;
+					option.series[0].data=paramB.component.timeline.options[paramA.currentIndex].series[0].data;
+					option.series[1].data=paramB.component.timeline.options[paramA.currentIndex].series[1].data;
+					myChart.setOption(option,true);
+					myChart.resize();
+				});
+			});
+</script>

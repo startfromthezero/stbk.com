@@ -1,0 +1,2 @@
+<?php die('forbidden'); ?>
+{"appid":"101439780","appkey":"47cbc0be269328f53d8acaa766db2763","callback":"http://www.stbk.com/callback.php","scope":"","errorReport":true,"storageType":"file","host":"localhost","user":"root","password":"root","database":"test"}

@@ -1,0 +1,10 @@
+.livechat {z-index:999;width:172px;height:60px;position:absolute;top:0px;font-size:12px;}
+.livechat .lctop{background:url(top.gif) no-repeat;height:36px;line-height:30px;color:#fff;padding-left:50px;font-weight:bold;}
+.livechat .lctop > a{margin-left:45px;}
+.livechat .lcbottom{background:url(bottom.gif) no-repeat;height:12px;}
+.livechat .lcbox {overflow:hidden;zoom:1;padding:2px;padding-left:5px;background:#FFF;line-height:26px;background:url(middle.gif) repeat-y;}
+
+.livechat .lcbox ul {padding-left:6px;margin:auto;}
+.livechat .lcbox ul li{list-style:none;margin:auto;}
+.livechat .lcbox ul li.tit {color:#800000;}
+.livechat .lcbox ul li img {vertical-align:middle;}

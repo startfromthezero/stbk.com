@@ -1,0 +1,28 @@
+<?php
+class ControllerGprsUion extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$key = '9c5987f81c84850b1165834d041bd33a';
+		$url = 'http://122.143.21.162/api.php';
+
+		$data = array(
+			'cmd'          => 'mobile',
+			'flag'         => '1',
+			'operDate'     => '20160422',
+			'poolCode'     => '1001',
+			'serialNumber' => '18643199984',
+			'opFlag'       => 0,
+		);
+
+		$data['timestamp'] = time();
+		$data['token']     = md5($key . date('dHYm', $data['timestamp']));
+
+		$result = json_decode($this->curl($url, $data, true), true);
+		wcore_utils::debug($result);
+	}
+
+}
+?>

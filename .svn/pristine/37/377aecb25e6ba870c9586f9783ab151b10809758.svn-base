@@ -1,0 +1,50 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<?php if ($error_logs) { ?>
+	<div class="warning"><?php echo $error_logs; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/home.png" /> <?php echo $heading_title; ?></h1>
+		</div>
+		<div class="content">
+			<div class="latest">
+				<div class="dashboard-heading"><?php echo $org_topup_stats; ?></div>
+				<table class="list">
+					<thead>
+					<tr>
+						<td><?php echo $text_org_name; ?></td>
+						<td><?php echo $text_paid_log; ?></td>
+						<td><?php echo $text_nopaid_log; ?></td>
+						<td><?php echo $text_paid_total; ?></td>
+						<td><?php echo $text_nopaid_total; ?></td>
+					</tr>
+					</thead>
+					<tbody>
+					<?php if($log) { ?>
+					<?php foreach ($log as $l) { ?>
+					<tr>
+						<td>
+							<a href="/gprs/pay_report?org_id=<?php echo $l['org_id']; ?>"><?php echo $orgs[$l['org_id']]; ?></a>
+						</td>
+						<td><?php echo $l['paid_amount']; ?></td>
+						<td><?php echo $l['nopaid_amount']; ?></td>
+						<td><?php echo $this->currency->format($l['paid_total']); ?></td>
+						<td><?php echo $this->currency->format($l['nopaid_total']); ?></td>
+					</tr>
+					<?php } ?>
+					<?php } ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function showDetails(did)
+{
+	var $url = '/app/devices/customer?device=' + did;
+	$.fn.tboxy({title:'绑定该车机的客户', width:'500px', value: {type:'url', val:$url}});
+}
+//--></script>
+<?php echo $page_footer; ?>

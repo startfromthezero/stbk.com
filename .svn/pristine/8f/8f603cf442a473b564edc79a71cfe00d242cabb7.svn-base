@@ -1,0 +1,81 @@
+<?php
+class ControllerGprsUion extends Controller
+{
+	private $error = array();
+
+	public function detail()
+	{
+		$key = '9c5987f81c84850b1165834d041bd33a';
+		$url = 'http://122.143.21.162/api.php';
+
+		$data   = array(
+			'cmd'          => 'mobile',
+			'flag'         => $this->request->get_var('flag', 'i', '', 2),
+			'operDate'     => $this->request->get_var('date', 's', '', date('Ym')),
+			'serialNumber' => $this->request->get_var('number'),
+			'timestamp'    => time(),
+			'token'        => md5($key . date('dHYm')),
+		);
+		$result = json_decode(wcore_utils::curl($url, $data, true), true);
+
+		if (empty($result['data']['consumeDataAll']))
+		{
+			$result = array(
+				'status' => 0,
+				'msg'    => '暂无数据'
+			);
+		}
+		else
+		{
+			$result = array(
+				'status'         => 1,
+				'consumeDataMon' => modules_funs::gpgsFormat($result['data']['consumeDataMon'] / 1048576),
+				'consumeDataAll' => modules_funs::gpgsFormat($result['data']['consumeDataAll'] / 1048576),
+			);
+		}
+		exit(json_encode($result));
+	}
+
+	public function index()
+	{
+		$key = '9c5987f81c84850b1165834d041bd33a';
+		$url = 'http://122.143.21.162/api.php';
+
+		$data = array(
+			'cmd'          => 'action',
+			'flag'         => '2',
+			'operDate'     => '201606',
+			'poolCode'     => '1049',
+			'serialNumber' => '14578600884',
+			'opFlag'       => 0,
+		);
+
+		$data['timestamp'] = time();
+		$data['token']     = md5($key . date('dHYm', $data['timestamp']));
+
+		$time_start = $this->microtime_float();
+
+		$result = json_decode(wcore_utils::curl($url, $data, true), true);
+
+		// Sleep for a while
+		//usleep(100);
+
+		$time_end = $this->microtime_float();
+		$time     = $time_end - $time_start;
+
+		echo "Did nothing in $time seconds\n";
+		wcore_utils::debug($result);
+	}
+
+	/**
+	 * Simple function to replicate PHP 5 behaviour
+	 */
+	function microtime_float()
+	{
+		list($usec, $sec) = explode(" ", microtime());
+
+		return ((float)$usec + (float)$sec);
+	}
+
+}
+?>

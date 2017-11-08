@@ -1,0 +1,108 @@
+<?php echo $page_header; ?>
+<div class="body" style="background-color:#ebebeb;margin:0 auto;height:100%;">
+	<div class="ICCID_conten">
+		<div style="overflow: hidden;">
+			<div class="ICCID_img"><img src="/img/app/ICCID_img.png" /></div>
+			<input type="text" placeholder="请输入ICCID或流量卡号码" name="iccid" value="<?php echo $iccid; ?>">
+		</div>
+		<div id="error-card">
+			<p>亲,查不到这个号码，请确定是否输入有误~</p>
+			<p> 1.如果您是手动输入，请您输入ICCID前19位数字；</p>
+			<p> 2.如果您是扫码输入，请您确定是云智易联流量卡。</p>
+		</div>
+		<div class="buttons" onclick="query()">
+			<a class="button ICCID_look">查询</a>
+		</div>
+		<div class="buttons ICCID_mt" id="scan">
+			<a class="button ICCID_saoma">扫码</a>
+		</div>
+	</div>
+	<p  style="color:#93918f;margin-top:20px;font-weight: bold;text-align:center;}">温馨提示:系统自动记住您最近查询成功的号码</p>
+	<div class="ICCID_sweep_card"><img src="/img/app/ICCID_sweep_card.png" /></div>
+	<p style="color:#93918f;margin:20px 0px;font-weight: bold;text-align:center;}">点击"扫码",对着流量卡的条形码扫一扫</p>
+</div>
+<script type="text/javascript">
+function query()
+{
+	var iccid = $("input[name='iccid']").val();
+	if (!iccid)
+	{
+		$.alert('<?php echo $error_iccid; ?>');
+		return false;
+	}
+
+	$.post('/app/main/scan', {'iccid': iccid}, function (result)
+	{
+		if (result != '')
+		{
+			addHistory(iccid);
+			location = '/app/main/info?iccid='+ iccid;
+		}
+		else
+		{
+			$('#error-card').css('display', 'block');
+		}
+	});
+}
+
+//存储历史记录ICCID
+function addHistory(iccid)
+{
+	var historyData = localStorage.getItem('iccidHistory');
+	var historyArr = historyData ? JSON.parse(historyData) : [];
+
+	//判断该iccid是否已记录
+	if ($.inArray(iccid, historyArr) > -1)
+	{
+		historyArr.splice($.inArray(iccid, historyArr), 1);
+	}
+
+	historyArr.unshift(iccid);
+	localStorage.setItem('iccidHistory', JSON.stringify(historyArr));
+}
+</script>
+<?php if ($isweixin) { ?>
+<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+<script type="text/javascript">
+wx.config({
+	debug    : false,
+	appId    : '<?php echo $jsapi['appid']; ?>',
+	timestamp: '<?php echo $jsapi['timestamp']; ?>',
+	nonceStr : '<?php echo $jsapi['noncestr']; ?>',
+	signature: '<?php echo $jsapi['signature']; ?>',
+	jsApiList: ['scanQRCode']
+});
+
+/**
+ * 扫一扫获取ICCID
+ */
+$('#scan').on('click', function ()
+{
+	wx.scanQRCode({
+		needResult: 1,
+		scanType  : ["barCode"],
+		success   : function (res)
+		{
+			var iccid = String(res.resultStr).substr(9, 19);
+			$("input[name='iccid']").val(iccid);
+			$("input[name='iccid']").attr('readonly', true);
+		}
+	});
+});
+</script>
+<?php } else{ ?>
+<script type="text/javascript">
+	function orderPay(pack_id)
+	{
+		var iccid = $("input[name='iccid']").val();
+		if (!iccid)
+		{
+			$.alert('<?php echo $error_iccid; ?>');
+			return false;
+		}
+		$.alert("暂只支持微信支付，请前往微信中访问充值");
+		//location = '/app/alipay/order?iccid=' + iccid + '&pack_id=' + pack_id;
+	}
+</script>
+<?php } ?>
+<?php echo $page_footer; ?>

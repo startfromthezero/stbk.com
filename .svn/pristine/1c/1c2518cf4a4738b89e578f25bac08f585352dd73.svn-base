@@ -1,0 +1,30 @@
+<?php echo $page_header; ?>
+<img src="/img/app/gprs-head.png" />
+<h2><?php echo $text_sysmsg; ?></h2>
+<div class="body">
+	<p style="font-size:15px;line-height:30px;"><?php echo $msg; ?></p><br/>
+	<?php if (!empty($url)) { ?><a href="<?php echo $url; ?>" class="button btn-green"><?php echo $text_msgbtn; ?></a><?php } ?>
+</div>
+
+<?php if (!empty($jsapi)) { ?>
+<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+<script type="text/javascript">
+wx.config({
+	debug    : false,
+	appId    : '<?php echo $jsapi['appid']; ?>',
+	timestamp: '<?php echo $jsapi['timestamp']; ?>',
+	nonceStr : '<?php echo $jsapi['noncestr']; ?>',
+	signature: '<?php echo $jsapi['signature']; ?>',
+	jsApiList: ['closeWindow']
+});
+wx.ready(function (){setTimeout('wx.closeWindow()', 5000);});
+</script>
+<?php } ?>
+<?php if (!empty($url)) { ?>
+<script type="text/javascript">
+	setTimeout(function(){
+		window.location = '<?php echo $url; ?>';
+	},3000);
+</script>
+<?php } ?>
+<?php echo $page_footer; ?>

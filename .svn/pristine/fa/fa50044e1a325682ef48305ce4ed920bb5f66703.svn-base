@@ -1,0 +1,75 @@
+<?php
+//Heading
+$_['heading_title'] = 'gprs card details';
+
+//Text
+$_['text_loading']     = 'are being dealt with, please wait';
+$_['text_pay_loading'] = 'is under prepaid phone please wait';
+
+$_['text_my_card']     = 'gprs card information';
+$_['text_card_paylog'] = 'top up records';
+$_['text_gprs_pay']    = 'gprs card top up';
+
+$_['text_gprs_amount'] = 'data plan';
+$_['text_value_type']  = 'top up type';
+$_['text_gprs_price']  = 'gprs price';
+$_['text_time_paid']   = 'top-up time';
+
+$_['text_card_iccid']     = 'gprs card ICCID:';
+$_['text_used_total']     = 'accumulated with traffic:';
+$_['text_pay_total']      = 'accumulated top up traffic:';
+$_['text_used_month']     = 'has been using traffic during the month:';
+$_['text_max_unused']     = 'current available flow:';
+$_['text_last_time_paid'] = 'last top up time:';
+$_['text_time_expire']    = 'flow expiration time:';
+$_['text_card_status']    = 'flow using a state:';
+
+
+$_['text_card_stop']   = 'your traffic card has been stopped, please prepaid phone!';
+$_['text_pay_body']    = 'flow top up %sM';
+$_['text_pay_success'] = 'top up success';
+$_['text_live_month']  = '%s months';
+
+
+$_['text_iccid']  = 'ICCID';
+$_['text_gprs']   = 'flow';
+$_['text_expire'] = 'validity';
+$_['text_price']  = 'price';
+
+
+$_['text_no_pack'] = 'data error, please choose again';
+$_['text_no_pay']  = 'system is busy, please again';
+
+
+//Button
+$_['button_online_pay'] = 'online top up';
+$_['button_scan_pay']   = 'top up and yards';
+$_['button_scan']       = 'scan';
+
+
+//Error
+$_['error_no_card'] = 'no the traffic card information';
+$_['error_no_pay']  = 'no prepaid phone card to record the flow';
+$_['error_no_pack'] = 'no data plan';
+$_['error_iccid']   = 'please fill out the ICCID';
+
+
+$_['error_order']      = 'the ICCID does not exist';
+$_['error_pay']        = 'top up failure';
+$_['error_no_czk']     = 'top up CARDS error';
+$_['error_czk_expire'] = 'top up card has expired';
+$_['error_czk_used']   = 'top up CARDS have been used';
+
+$_['arr_pay_type'] = array(
+	'1' => 'wxpay',
+	'2' => 'alipay',
+	'3' => 'topup card',
+	'4' => 'bank transfer',
+);
+
+
+$_['arr_card_status'] = array(
+	'0' => 'Using',
+	'1' => 'Pause'
+);
+?>

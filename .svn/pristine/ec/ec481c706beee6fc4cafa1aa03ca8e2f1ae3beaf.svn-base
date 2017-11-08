@@ -1,0 +1,36 @@
+<?php
+// Heading
+$_['heading_title'] = '充值明细统计';
+
+// Text
+$_['text_pay_report']   = '机构充值统计';
+$_['text_card_iccid']   = 'ICCID卡';
+$_['button_chart']      = '图表';
+$_['text_gprs_amount']  = '套餐';
+$_['text_gprs_price']   = '价格';
+$_['text_pay_method']   = '付款方式';
+$_['text_transfer_id']  = '支付流水号';
+$_['text_is_paid']      = '支付状态';
+$_['text_time_paid']    = '付款时间';
+$_['text_time_added']   = '充值时间';
+$_['text_org_name']     = '机构名称';
+$_['text_pay_type']     = '付款方式';
+$_['text_paid_log']     = '已付款记录';
+$_['text_nopaid_log']   = '未付款记录';
+$_['text_paid_total']   = '已付款金额';
+$_['text_nopaid_total'] = '未付款金额';
+$_['text_open']         = '打开详情';
+$_['text_close']        = '关闭详情';
+
+$_['arr_pay_type'] = array(
+	'1' => '微信支付',
+	'2' => '支付宝',
+	'3' => '充值卡',
+	'4' => '银行转账',
+);
+
+$_['arr_pay_status'] = array(
+	'0' => '未付款',
+	'1' => '已付款'
+);
+?>

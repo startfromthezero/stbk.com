@@ -1,0 +1,300 @@
+<?php
+class ControllerLocalisationNation extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('localisation/nation');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('localisation/nation');
+
+		return $this->getList();
+	}
+
+	public function insert()
+	{
+		$this->registry->language('localisation/nation');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('localisation/nation');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$data = array(
+				'ntname'  => $this->request->get_var('ntname', 's'),
+				'zipcode' => $this->request->get_var('zipcode', 's'),
+				'parent'  => $this->request->get_var('ntid', 'i') ? $this->request->get_var('ntid', 'i') : 0
+			);
+			$this->model_localisation_nation->addNation($data);
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+			$url .= isset($this->request->get['sort']) ? '&sort=' . $this->request->get['sort'] : '';
+			$url .= isset($this->request->get['order']) ? '&order=' . $this->request->get['order'] : '';
+			$url .= isset($this->request->get['page']) ? '&page=' . $this->request->get['page'] : '';
+			$url .= isset($this->request->get['ntid']) ? '&ntid=' . $this->request->get['ntid'] : '';
+
+			$this->registry->redirect($this->url->link('localisation/nation', $url, true));
+		}
+
+		return $this->getForm();
+	}
+
+	public function update()
+	{
+		$this->registry->language('localisation/nation');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('localisation/nation');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$data = array(
+				'ntid'    => $this->request->get_var('ntid', 'i'),
+				'ntname'  => $this->request->get_var('ntname', 's'),
+				'zipcode' => $this->request->get_var('zipcode', 's')
+			);
+			$this->model_localisation_nation->editNation($data);
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+			$url .= isset($this->request->get['sort']) ? '&sort=' . $this->request->get['sort'] : '';
+			$url .= isset($this->request->get['order']) ? '&order=' . $this->request->get['order'] : '';
+			$url .= isset($this->request->get['page']) ? '&page=' . $this->request->get['page'] : '';
+
+			$ntid        = isset($this->request->get['ntid']) ? $this->request->get['ntid'] : '';
+			$nation_info = $this->model_localisation_nation->getEdit($ntid);
+			$url .= '&ntid=' . $nation_info['parent'];
+			$this->registry->redirect($this->url->link('localisation/nation', $url, true));
+		}
+
+		return $this->getForm();
+	}
+
+	public function delete()
+	{
+		$this->registry->language('localisation/nation');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('localisation/nation');
+
+		if (isset($this->request->post['selected']))
+		{
+			foreach ($this->request->post['selected'] as $ntid)
+			{
+				$this->model_localisation_nation->deleteNation($ntid);
+			}
+
+			$this->session->data['success'] = $this->language->get('text_delete');
+
+			$url = '';
+			$url .= isset($this->request->get['sort']) ? '&sort=' . $this->request->get['sort'] : '';
+			$url .= isset($this->request->get['order']) ? '&order=' . $this->request->get['order'] : '';
+			$url .= isset($this->request->get['page']) ? '&page=' . $this->request->get['page'] : '';
+			$url .= isset($this->request->get['ntid']) ? '&ntid=' . $this->request->get['ntid'] : '';
+
+			$this->registry->redirect($this->url->link('localisation/nation', $url, true));
+		}
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs   = $this->language->data;
+		$sort  = isset($this->request->get['sort']) ? $this->request->get['sort'] : 'name';
+		$order = isset($this->request->get['order']) ? $this->request->get['order'] : 'ASC';
+		$page  = isset($this->request->get['page']) ? $this->request->get['page'] : 1;
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['sort']) ? '&sort=' . $this->request->get['sort'] : '';
+		$url .= isset($this->request->get['order']) ? '&order=' . $this->request->get['order'] : '';
+		$url .= isset($this->request->get['page']) ? '&page=' . $this->request->get['page'] : '';
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('localisation/nation', $url, true),
+			'separator' => ' :: '
+		);
+
+		$url .= isset($this->request->get['ntid']) ? '&ntid=' . $this->request->get['ntid'] : '';
+		$vrs['insert'] = $this->url->link('localisation/nation/insert', $url, true);
+		$vrs['delete'] = $this->url->link('localisation/nation/delete', $url, true);
+
+		$data           = array(
+			'ntid'  => $this->request->get_var('ntid', 'i'),
+			'sort'  => $sort,
+			'order' => $order,
+			'start' => ((int)$page - 1) * $this->config->get('config_admin_limit'),
+			'limit' => $this->config->get('config_admin_limit')
+		);
+		$nation_total   = $this->model_localisation_nation->getTotalNations($data);
+		$vrs['nations'] = $this->model_localisation_nation->getNations($data);
+		$vrs['nation']  = array_reverse($this->model_localisation_nation->getNation($data['ntid']));
+
+		$vrs['selected'] = isset($this->request->post['selected']) ? $this->request->post['selected'] : '';
+
+		$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+
+		$url = ($order == 'ASC') ? '&order=DESC' : '&order=ASC';
+		$url .= isset($this->request->get['page']) ? '&page=' . $this->request->get['page'] : '';
+		$url .= isset($this->request->get['ntid']) ? '&ntid=' . $this->request->get['ntid'] : '';
+
+		$vrs['sort_name'] = $this->url->link('localisation/nation', 'sort=ntname' . $url, true);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['sort']) ? '&sort=' . $this->request->get['sort'] : '';
+		$url .= isset($this->request->get['order']) ? '&order=' . $this->request->get['order'] : '';
+		$url .= isset($this->request->get['ntid']) ? '&ntid=' . $this->request->get['ntid'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $nation_total;
+		$pagination->page  = $page;
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('localisation/nation', "{$url}&page={page}", true);
+
+		$vrs['pagination'] = $pagination->render();
+		$vrs['sort']       = $sort;
+		$vrs['order']      = $order;
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/localisation/nation_list.tpl', $vrs);
+	}
+
+	private function getForm()
+	{
+		$vrs                  = $this->language->data;
+		$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['error_name']    = isset($this->error['ntname']) ? $this->error['ntname'] : '';
+		$vrs['error_zipcode'] = isset($this->error['zipcode']) ? $this->error['zipcode'] : '';
+
+		$url = '';
+		$url .= isset($this->request->get['sort']) ? '&sort=' . $this->request->get['sort'] : '';
+		$url .= isset($this->request->get['order']) ? '&order=' . $this->request->get['order'] : '';
+		$url .= isset($this->request->get['page']) ? '&page=' . $this->request->get['page'] : '';
+
+		$action = explode('/', $this->request->get_var('route'));
+		$ntid   = isset($this->request->get['ntid']) ? $this->request->get['ntid'] : '';
+		$url .= '&ntid=' . $ntid;
+		if (substr(end($action), 0, 6) == 'insert')
+		{
+			$vrs['action'] = $this->url->link('localisation/nation/insert', $url, true);
+			$vrs['cancel'] = $this->url->link('localisation/nation', $url, true);
+		}
+		else
+		{
+			$nation_info   = $this->model_localisation_nation->getEdit($ntid);
+			$vrs['parent'] = $nation_info['parent'];
+			$vrs['action'] = $this->url->link('localisation/nation/update', $url, true);
+
+			$url = '';
+			$url .= isset($this->request->get['sort']) ? '&sort=' . $this->request->get['sort'] : '';
+			$url .= isset($this->request->get['order']) ? '&order=' . $this->request->get['order'] : '';
+			$url .= isset($this->request->get['page']) ? '&page=' . $this->request->get['page'] : '';
+			$url .= '&ntid=' . $nation_info['parent'];
+
+			$vrs['cancel'] = $this->url->link('localisation/nation', $url, true);
+		}
+
+		if (isset($this->request->post['zipcode']))
+		{
+			$vrs['zipcode'] = $this->request->post['zipcode'];
+		}
+		elseif (!empty($nation_info))
+		{
+			$vrs['zipcode'] = $nation_info['zipcode'];
+		}
+		else
+		{
+			$vrs['zipcode'] = '';
+		}
+
+		if (isset($this->request->post['ntname']))
+		{
+			$vrs['ntname'] = $this->request->post['ntname'];
+		}
+		elseif (!empty($nation_info))
+		{
+			$vrs['ntname'] = $nation_info['ntname'];
+		}
+		else
+		{
+			$vrs['ntname'] = '';
+		}
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('localisation/nation', $url, true),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/localisation/nation_form.tpl', $vrs);
+	}
+
+	private function validateForm()
+	{
+		if (!$this->user->hasPermission('modify', 'localisation/nation'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		if ((mb_strlen($this->request->post['ntname']) < 2) || (mb_strlen($this->request->post['ntname']) > 128))
+		{
+			$this->error['ntname'] = $this->language->get('error_name');
+		}
+
+		if (strlen($this->request->post['zipcode']) > 10)
+		{
+			$this->error['zipcode'] = $this->language->get('error_zipcode');
+		}
+
+		return !$this->error;
+	}
+}
+?>

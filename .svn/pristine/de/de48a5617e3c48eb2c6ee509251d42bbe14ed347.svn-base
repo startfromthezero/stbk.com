@@ -1,0 +1,67 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?><div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<?php if ($success) { ?>
+	<div class="success"><?php echo $success; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/user.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<?php if ($mpermission) { ?>
+				<a onclick="location = '<?php echo $insert; ?>'" class="button btn-green"><?php echo $button_insert; ?></a>
+				<a onclick="$('form').submit();" class="button btn-yellow"><?php echo $button_delete; ?></a>
+				<?php } ?>
+			</div>
+		</div>
+		<div class="content">
+			<form action="/user/org/delete" method="post" enctype="multipart/form-data" id="form">
+				<table class="list">
+					<thead>
+						<tr>
+							<td width="1" style="text-align: center;"><input type="checkbox" onclick="$('input[name*=\'selected\']').prop('checked', this.checked);" />
+							</td>
+							<td><?php echo $column_name; ?></td>
+							<td><?php echo $column_partner_id; ?></td>
+							<td><?php echo $column_partner_key; ?></td>
+							<td><?php echo $column_notify_url; ?></td>
+							<td><?php echo $column_user_num; ?></td>
+							<td><?php echo $column_email; ?></td>
+							<td><?php echo $column_tel; ?></td>
+							<td><?php echo $column_memo; ?></td>
+							<td><?php echo $column_action; ?></td>
+						</tr>
+					</thead>
+					<tbody>
+						<?php if ($orgs) { ?>
+						<?php foreach ($orgs as $org) { ?>
+						<tr>
+							<td style="text-align: center;"><input type="checkbox" name="selected[]" value="<?php echo $org['org_id']; ?>" /></td>
+							<td><?php echo $org['name']; ?></td>
+							<td><?php echo $org['partner_id']; ?></td>
+							<td><?php echo $org['partner_key']; ?></td>
+							<td><?php echo $org['notify_url']; ?></td>
+							<td><?php echo $org['user_num']; ?></td>
+							<td><?php echo $org['email']; ?></td>
+							<td><?php echo $org['tel']; ?></td>
+							<td><?php echo $org['memo']; ?></td>
+							<td><?php if ($mpermission) { ?>[<a href="/user/org/update?org_id=<?php echo $org['org_id']; ?>"><?php echo $text_edit; ?></a>]<?php }?></td>
+						</tr>
+						<?php } ?>
+						<?php } else { ?>
+						<tr>
+							<td class="center" colspan="10"><?php echo $text_no_results; ?></td>
+						</tr>
+						<?php } ?>
+					</tbody>
+				</table>
+			</form>
+		</div>
+	</div>
+</div>
+<?php echo $page_footer; ?>

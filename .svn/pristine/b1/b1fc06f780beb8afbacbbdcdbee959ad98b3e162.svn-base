@@ -1,0 +1,299 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?>
+	<div class="warning"><?php echo $error_warning; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/payment.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<?php if ($mpermission) { ?><a onclick="batchSubmit()" class="button"><?php echo $button_save; ?></a><?php } ?>
+				<a href="<?php echo $cancel; ?>" class="button"><?php echo $button_cancel; ?></a>
+			</div>
+		</div>
+		<div class="content">
+			<form action="<?php echo $action; ?>" method="post" enctype="multipart/form-data" id="form">
+				<table class="form">
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_batch_sn; ?></td>
+						<td><input type="text" name="batch_sn" value="<?php echo $batch_sn; ?>" /><?php if ($error_batch_sn) { ?><span class="error"><?php echo $error_batch_sn; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_batch_name; ?></td>
+						<td><input type="text" name="batch_name" value="<?php echo $batch_name; ?>" /><?php if ($error_batch_name) { ?><span class="error"><?php echo $error_batch_name; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><?php echo $entry_batch_memo; ?></td>
+						<td><textarea name="batch_memo" rows="5" cols="90"><?php echo $batch_memo; ?></textarea><?php if ($error_batch_memo) { ?><span class="error"><?php echo $error_batch_memo; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_batch_shipper; ?></td>
+						<td><input type="text" name="batch_shipper" value="<?php echo $batch_shipper; ?>" /><?php if ($error_batch_shipper) { ?><span class="error"><?php echo $error_batch_shipper; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_org_name; ?></td>
+						<td>
+							<?php if ($batch_id) { ?>
+							<input type="text" disabled value="<?php echo $orgs[$org_id]; ?>" style="border:none;background:none;" />
+							<?php } else {?>
+							<select name="org_id">
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v ; ?>
+								</option>
+								<?php } ?>
+							</select>
+							<?php } ?>
+							<?php if ($error_org) { ?><span class="error"><?php echo $error_org; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_province; ?></td>
+						<td><select name="province_id" did="<?php echo $province_id; ?>"></select><?php if ($error_province) { ?><span class="error"><?php echo $error_province; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_city; ?></td>
+						<td><select name="city_id" did="<?php echo $city_id; ?>"></select><?php if ($error_city) { ?><span class="error"><?php echo $error_city; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><?php echo $entry_district; ?></td>
+						<td><select name="district_id" did="<?php echo $district_id; ?>"></select><?php if ($error_district) { ?><span class="error"><?php echo $error_district; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_gprs_month; ?></td>
+						<td><input type="text" maxlength="8" name="gprs_month" value="<?php echo $gprs_month; ?>" <?php if($batch_id) { ?> disabled style="background:none;border:none;" <?php } ?>  /><?php if ($error_gprs_month) { ?><span class="error"><?php echo $error_gprs_month; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $entry_live_month; ?></td>
+						<td>
+							<?php if ($batch_id) { ?>
+							<input type="text" disabled value="<?php echo $arr_live_month[$live_month]; ?>" style="border:none;background:none;" />
+							<?php } else {?>
+							<select name="live_month">
+								<?php foreach ($arr_live_month as $k => $v) { ?>
+								<option value="<?php echo $k; ?>" <?php if ($k == $live_month) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+							<?php } ?>
+							<?php if($error_live_month) { ?><span class="error"><?php echo $error_live_month; ?></span><?php } ?>
+						</td>
+					</tr>
+					<?php if (empty($batch_id)){ ?>
+					<tr>
+						<td><?php echo $entry_import_devices; ?></td>
+						<td class="upload-file">
+							<input id="filename" type="hidden" name="filename" value="<?php echo $filename; ?>" />
+							<a id="button-upload" class="button" style="margin:0 15px;"><?php echo $button_upload; ?></a>
+							<?php echo $filename; ?>
+							<?php if ($error_file) { ?><span class="error"><?php echo $error_file; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr class="<?php echo $filename ? '' : 'hidden'; ?> file-tr">
+						<td><span class="required">*</span><?php echo $entry_card_iccid; ?></td>
+						<td>
+							<select name="card_iccid" class="file-head">
+								<?php if (!empty($file_head)) { ?>
+								<option value=""><?php echo $text_excel_select; ?></option>
+								<?php foreach($file_head as $k=>$v) { ?>
+								<option value="<?php echo $k; ?>" <?php echo $k == $card_iccid ? 'selected' : '';?>><?php echo $v; ?></option>
+								<?php } ?>
+								<?php } ?>
+							</select>
+							<?php if ($error_card_iccid) { ?><span class="error"><?php echo $error_card_iccid; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr class="<?php echo $filename ? '' : 'hidden'; ?> file-tr">
+						<td><?php echo $entry_card_sn; ?></td>
+						<td>
+							<select name="card_sn" class="file-head">
+								<?php if (!empty($file_head)) { ?>
+								<option value=""><?php echo $text_excel_select; ?></option>
+								<?php foreach($file_head as $k=>$v) { ?>
+								<option value="<?php echo $k; ?>" <?php echo $k == $card_sn ? 'selected' : '';?>><?php echo $v; ?></option>
+								<?php } ?>
+								<?php } ?>
+							</select>
+							<?php if ($error_card_sn) { ?><span class="error"><?php echo $error_card_sn; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr class="<?php echo $filename ? '' : 'hidden'; ?> file-tr">
+						<td><?php echo $entry_card_name; ?></td>
+						<td>
+							<select name="card_name" class="file-head">
+								<?php if (!empty($file_head)) { ?>
+								<option value=""><?php echo $text_excel_select; ?></option>
+								<?php foreach($file_head as $k=>$v) { ?>
+								<option value="<?php echo $k; ?>" <?php echo $k == $card_name ? 'selected' : '';?>><?php echo $v; ?></option>
+								<?php } ?>
+								<?php } ?>
+							</select>
+							<?php if ($error_card_name) { ?><span class="error"><?php echo $error_card_name; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr class="<?php echo $filename ? '' : 'hidden'; ?> file-tr">
+						<td><?php echo $entry_owner_name; ?></td>
+						<td>
+							<select name="owner_name" class="file-head">
+								<?php if (!empty($file_head)) { ?>
+								<option value=""><?php echo $text_excel_select; ?></option>
+								<?php foreach($file_head as $k=>$v) { ?>
+								<option value="<?php echo $k; ?>" <?php echo $k == $owner_name ? 'selected' : '';?>><?php echo $v; ?></option>
+								<?php } ?>
+								<?php } ?>
+							</select>
+							<?php if ($error_owner_name) { ?><span class="error"><?php echo $error_owner_name; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr class="<?php echo $filename ? '' : 'hidden'; ?> file-tr">
+						<td><?php echo $entry_owner_gender; ?></td>
+						<td>
+							<select name="owner_gender" class="file-head">
+								<?php if (!empty($file_head)) { ?>
+								<option value=""><?php echo $text_excel_select; ?></option>
+								<?php foreach($file_head as $k=>$v) { ?>
+								<option value="<?php echo $k; ?>" <?php echo $k == $owner_gender ? 'selected' : '';?>><?php echo $v; ?></option>
+								<?php } ?>
+								<?php } ?>
+							</select>
+						</td>
+					</tr>
+					<tr class="<?php echo $filename ? '' : 'hidden'; ?> file-tr">
+						<td><?php echo $entry_owner_cdi; ?></td>
+						<td>
+							<select name="owner_cdi" class="file-head">
+								<?php if (!empty($file_head)) { ?>
+								<option value=""><?php echo $text_excel_select; ?></option>
+								<?php foreach($file_head as $k=>$v) { ?>
+								<option value="<?php echo $k; ?>" <?php echo $k == $owner_cdi ? 'selected' : '';?>><?php echo $v; ?></option>
+								<?php } ?>
+								<?php } ?>
+							</select>
+							<?php if ($error_owner_cdi) { ?><span class="error"><?php echo $error_owner_cdi; ?></span><?php } ?>
+						</td>
+					</tr>
+					<?php } ?>
+				</table>
+			</form>
+		</div>
+		<div style="width:620px;margin-top:20px;height:150px;">
+			<p style="font-size:14px;"><span class="required"><?php echo $entry_warm_prompt; ?></span></p>
+			<table width="500px;" align="center">
+				<caption><?php echo $entry_example; ?></caption>
+				<tr>
+					<th height="30"><?php echo $entry_online_card; ?></th>
+					<th><?php echo $entry_iccid_card; ?></th>
+					<th><?php echo $entry_case_file; ?></th>
+				</tr>
+				<tr>
+					<td height="30">14589601301</td>
+					<td>8997113670902045101</td>
+					<td rowspan="2"><a href="/gprs/batch/download"><?php echo $entry_click_download; ?></a></td>
+				</tr>
+				<tr>
+					<td height="30">14589601302</td>
+					<td>8997113670902045102</td>
+				</tr>
+			</table>
+		</div>
+</div>
+
+<script type="text/javascript" src="/js/ajaxupload.js"></script>
+<script type="text/javascript">
+function batchSubmit()
+{
+	if ($("input[name='filename']").val() && !$("select[name='card_iccid']").val())
+	{
+		tipBox('<?php echo $error_iccid; ?>');
+		return false;
+	}
+	<?php if (empty($batch_id)) { ?>
+	if (!confirm('<?php echo $note_confirm; ?>'))
+	{
+		return false;
+	}
+	<?php } ?>
+	$('#form').submit();
+}
+<?php if (empty($batch_id)) { ?>
+new AjaxUpload('#button-upload', {
+	action      : '/gprs/batch/upload',
+	name        : 'file',
+	autoSubmit  : true,
+	responseType: 'json',
+	onSubmit    : function (file, extension)
+	{
+		$('#button-upload').after('<img src="/view/image/loading.gif" class="loading" style="padding-left: 5px;" />');
+		$('#button-upload').attr('disabled', true);
+	},
+	onComplete  : function (file, json)
+	{
+		$('#button-upload').attr('disabled', false);
+		if (json['success'] && json['file_head'])
+		{
+			$('#button-upload').after('<span class="success">' + json['success'] + '</span>');
+			$("input[name='filename']").val(json['filename']);
+			var html = '<option value=""><?php echo $text_excel_select; ?></option>';
+
+			$.each(json['file_head'], function (i, v)
+			{
+				html += '<option value="' + i + '">' + v + '</option>'
+			});
+
+			$('.file-head').html(html);
+			$('.file-tr').removeClass('hidden');
+		}
+		if (json['error'])
+		{
+			tipBox(json['error']);
+		}
+		$('.loading').remove();
+	}
+});
+<?php } ?>
+
+function loadZone($pid, $zone_id)
+{
+	if (!$pid || !$zone_id)
+	{
+		return false;
+	}
+	var zobj = $('select[name=\'' + $zone_id + '\']');
+	$.ajax({
+		url       : '/gprs/batch/zone?pid=' + $pid,
+		dataType  : 'json',
+		beforeSend: function ()
+		{
+			zobj.after('<span id="loading" class="wait">&nbsp;<img src="/view/image/loading.gif" /></span>');
+		},
+		complete  : function ()
+		{
+			$('#loading').remove();
+		},
+		success   : function (json)
+		{
+			var html = '<option value="">请选择...</option>';
+			if (json != '')
+			{
+				$.each(json, function (key, val)
+				{
+					html += '<option value="' + key + '"' + ((key == zobj.attr('did')) ? ' selected="selected"' : '') + '>' + val + '</option>';
+				});
+			}
+			zobj.html(html).trigger('change');
+		},
+		error     : function (xhr, ajaxOptions, thrownError)
+		{
+			tipBox(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+		}
+	});
+}
+loadZone(1, 'province_id');
+$('select[name=\'province_id\']').on('change', function () {loadZone(this.value, 'city_id')});
+$('select[name=\'city_id\']').on('change', function () {loadZone(this.value, 'district_id')});
+</script>
+<?php echo $page_footer; ?>

@@ -1,0 +1,115 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_report; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/report" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="find">
+				<tr>
+					<td width="15%"><?php echo $text_start_date; ?><input type="text" name="filter_date_start" value="<?php echo $filter_date_start; ?>" id="date-start" size="12" /></td>
+					<td><?php echo $text_end_date; ?><input type="text" name="filter_date_end" value="<?php echo $filter_date_end; ?>" id="date-end" size="12" /></td>
+				</tr>
+			</table>
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_user_firstname; ?></td>
+					<td><?php echo $text_pay_count; ?></td>
+					<td><?php echo $text_gprs_count; ?></td>
+					<td><?php echo $text_money_count; ?></td>
+					<td><?php echo $text_action; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td>
+						<select name="filter_org_id">
+							<option value=""></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k == $filter_org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					</td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+				</tr>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><a href="/gprs/pay_report?org_id=<?php echo $item['org_id']; ?>"><?php echo $item['firstname']; ?></a></td>
+					<td><?php echo $item['pay_count']; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_count']); ?></td>
+					<td><?php echo $this->currency->format($item['money_count']); ?></td>
+					<td> [ <a href="/gprs/report/detail?org_id=<?php echo $item['org_id']; ?>&filter_date_start=<?php echo $filter_date_start; ?>&filter_date_end=<?php echo $filter_date_end; ?>"><?php echo $button_see_details; ?></a> ] </td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="5"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/report?';
+	var filter_org_id = $('select[name=\'filter_org_id\']').val();
+	if (filter_org_id)
+	{
+		url += '&filter_org_id=' + filter_org_id;
+	}
+
+	var filter_date_start = $('input[name=\'filter_date_start\']').val();
+	if (filter_date_start)
+	{
+		url += '&filter_date_start=' + encodeURIComponent(filter_date_start);
+	}
+
+	var filter_date_end = $('input[name=\'filter_date_end\']').val();
+	if (filter_date_end)
+	{
+		url += '&filter_date_end=' + encodeURIComponent(filter_date_end);
+	}
+
+	location = url;
+}
+
+$('#date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+</script>
+<?php echo $page_footer; ?>

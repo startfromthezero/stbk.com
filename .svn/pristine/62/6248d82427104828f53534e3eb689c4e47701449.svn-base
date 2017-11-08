@@ -1,0 +1,95 @@
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<div id="main1" style="height:400px;">1</div><!-- ECharts单文件引入 -->
+<script type="text/javascript">
+	// 路径配置
+	require.config({
+		paths: {
+			echarts: 'http://echarts.baidu.com/build/dist'
+		}
+	});
+
+	// 使用
+	require(
+	[
+		'echarts',
+		'echarts/chart/bar' // 使用柱状图就加载bar模块，按需加载
+	],
+	function (ec)
+	{
+		// 基于准备好的dom，初始化echarts图表
+		var myChart = ec.init(document.getElementById('main1'));
+
+		var option = {
+			title     : {
+				x   : 'center',
+				text: '机构充值记录统计',
+			},
+			tooltip   : {
+				trigger: 'item'
+			},
+			toolbox   : {
+				show   : true,
+				feature: {
+					dataView   : {show: true, readOnly: false},
+					restore    : {show: true},
+					saveAsImage: {show: true}
+				}
+			},
+			calculable: true,
+			grid      : {
+				borderWidth: 0,
+				y          : 80,
+				y2         : 60
+			},
+			xAxis     : [
+				{
+					type: 'category',
+					show: false,
+					data: <?php echo $org; ?>
+				}
+			],
+			yAxis     : [
+				{
+					type: 'value',
+					show: false
+				}
+			],
+			series    : [
+				{
+					name     : '机构充值记录统计',
+					type     : 'bar',
+					itemStyle: {
+						normal: {
+							color: function (params)
+							{
+								// build a color map as your need.
+								var colorList = <?php echo $color; ?>;
+								return colorList[params.dataIndex]
+							},
+							label: {
+								show     : true,
+								position : 'top',
+								formatter: '{b}\n{c}'
+							}
+						}
+					},
+					data     : <?php echo $data; ?>,
+					markPoint: {
+						tooltip: {
+							trigger        : 'item',
+							backgroundColor: 'rgba(0,0,0,0)',
+							formatter      : function (params)
+							{
+								return '<img src="'
+										+ params.data.symbol.replace('image://', '')
+										+ '"/>';
+							}
+						},
+						data   : []
+					}
+				}
+			]
+		};
+		myChart.setOption(option);
+	});
+</script>

@@ -1,0 +1,180 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box" style="min-height:545px;">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_gprs_card_used; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/card_used" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="find">
+				<tr>
+					<td width="32%">
+						<?php echo $text_org_name; ?>
+						<select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td width="32%"><?php echo $text_start_date; ?><input type="text" name="date_start" value="<?php echo $date_start; ?>" id="date-start" size="12" /></td>
+					<td><?php echo $text_end_date; ?><input type="text" name="date_end" value="<?php echo $date_end; ?>" id="date-end" size="12" /></td>
+				</tr>
+			</table>
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_org_name; ?></td>
+					<td><?php echo $text_sell_num; ?></td>
+					<td><?php echo $text_not_act_num; ?></td>
+					<td><?php echo $text_not_act_rate; ?></td>
+					<td><?php echo $text_act_num; ?></td>
+					<td><?php echo $text_act_rate; ?></td>
+					<td><?php echo $text_gprs_total; ?></td>
+					<td><?php echo $text_gprs_used; ?></td>
+					<td><?php echo $text_max_unused; ?></td>
+					<td><?php echo $text_used_rate; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<?php if (!empty($card_used)) { ?>
+				<?php foreach ($card_used as $v) { ?>
+				<tr>
+					<td><?php echo $orgs[$v['org_id']]; ?></td>
+					<td><?php echo $v['card_count']; ?></td>
+					<td><?php echo $v['card_count']-$v['activated']; ?></td>
+					<td><?php echo round(($v['card_count']-$v['activated'])/$v['card_count']*100,2).'%'; ?></td>
+					<td><?php echo $v['activated']; ?></td>
+					<td><?php echo round($v['activated']/$v['card_count']*100,2).'%'; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($v['unused_count']+$v['used_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($v['used_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($v['unused_count']); ?></td>
+					<td><?php echo (round($v['used_count']/($v['unused_count']+$v['used_count'])*100,2)).'%'; ?></td>
+				</tr>
+				<?php } ?>
+				<tr style="color:#00F;font-weight:bold;">
+					<td><?php echo $text_subtotal; ?></td>
+					<td><?php echo $subtotal['card_count']; ?></td>
+					<td><?php echo $subtotal['card_count']-$subtotal['activated']; ?></td>
+					<td><?php echo round(($subtotal['card_count']-$subtotal['activated'])/$subtotal['card_count']*100,2).'%'; ?></td>
+					<td><?php echo $subtotal['activated']; ?></td>
+					<td><?php echo round($subtotal['activated']/$subtotal['card_count']*100,2).'%'; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($subtotal['unused_count']+$subtotal['used_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($subtotal['used_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($subtotal['unused_count']); ?></td>
+					<td><?php echo (round($subtotal['used_count']/($subtotal['unused_count']+$subtotal['used_count'])*100,2)).'%'; ?></td>
+				</tr>
+				<tr style="color:#F00;font-weight:bold;">
+					<td><?php echo $text_total; ?></td>
+					<td><?php echo $total['card_count']; ?></td>
+					<td><?php echo $total['card_count']-$total['activated']; ?></td>
+					<td><?php echo round(($total['card_count']-$total['activated'])/$total['card_count']*100,2).'%'; ?></td>
+					<td><?php echo $total['activated']; ?></td>
+					<td><?php echo round($total['activated']/$total['card_count']*100,2).'%'; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($total['unused_count']+$total['used_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($total['used_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($total['unused_count']); ?></td>
+					<td><?php echo (round($total['used_count']/($total['unused_count']+$total['used_count'])*100,2)).'%'; ?></td>
+				</tr>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="10"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+	<div class="content">
+		<div id="tabs" class="htabs">
+			<a href="#tab1"><?php echo $text_activat_case; ?></a>
+			<a href="#tab2"><?php echo $text_used_case; ?></a>
+		</div>
+		<div id="tab1" style="height:300px;"></div>
+		<div id="tab2" style="height:300px;"></div>
+	</div>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+$.fn.Tabs = function ()
+{
+	var selector = this;
+	this.each(function ()
+	{
+		var obj = $(this);
+		$(obj.attr('href')).hide();
+		$(obj).click(function ()
+		{
+			$(selector).removeClass('selected');
+			$(selector).each(function (i, element)
+			{
+				$($(element).attr('href')).hide();
+			});
+			$(this).addClass('selected');
+			var tab = $(this).attr('href');
+			$(tab).show();
+			$(tab).load('/gprs/card_used/chart?changeId=' + tab.substr(4, 1) + '&page=<?php echo $page ; ?>'+'&org_id=<?php echo $org_id; ?>'+'&date_start=<?php echo $date_start; ?>' + '&date_end=<?php echo $date_end; ?>' );
+			return false;
+		});
+	});
+	$(this).show();
+	$(this).first().click();
+};
+$('#tabs a').Tabs();
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/card_used?';
+
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'org_id=' + encodeURIComponent(org_id);
+	}
+
+	var date_start = $('input[name=\'date_start\']').val();
+	if (date_start)
+	{
+		url += '&date_start=' + encodeURIComponent(date_start);
+	}
+
+	var date_end = $('input[name=\'date_end\']').val();
+	if (date_end)
+	{
+		url += '&date_end=' + encodeURIComponent(date_end);
+	}
+
+	location = url;
+}
+$('#date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+</script>
+<?php echo $page_footer; ?>

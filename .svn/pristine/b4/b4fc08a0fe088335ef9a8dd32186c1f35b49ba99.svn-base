@@ -1,0 +1,277 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/card" class="button btn-red"><?php echo $button_reset; ?></a>
+				<a href="javascript:showDetails()" class="button btn-pink"><?php echo $button_chart; ?></a>
+				<?php if ($mpermission && $this->user->getGroupId() <= 1) { ?><a href="/gprs/batch" class="button btn-orange"><?php echo $button_import; ?></a><?php } ?>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_card_iccid; ?></td>
+					<td><?php echo $text_user_firstname; ?></td>
+					<td>
+						<?php if ($sort == 'gprs_month') { ?>
+						<a href="<?php echo $sort_gprs_month; ?>" class="<?php echo strtolower($order); ?>"><?php echo $text_gprs_month; ?></a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_gprs_month; ?>"><?php echo $text_gprs_month; ?></a>
+						<?php } ?>
+					</td>
+					<td>
+						<?php if ($sort == 'used_month') { ?>
+						<a href="<?php echo $sort_used_month; ?>"
+						   class="<?php echo strtolower($order); ?>"><?php echo $text_used_month; ?></a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_used_month; ?>"><?php echo $text_used_month; ?></a>
+						<?php } ?>
+					</td>
+					<td>
+						<?php if ($sort == 'used_total') { ?>
+						<a href="<?php echo $sort_used_total; ?>" class="<?php echo strtolower($order); ?>"><?php echo $text_used_total; ?></a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_used_total; ?>"><?php echo $text_used_total; ?></a>
+						<?php } ?>
+					</td>
+					<td>
+						<?php if ($sort == 'max_unused') { ?>
+						<a href="<?php echo $sort_max_unused; ?>" class="<?php echo strtolower($order); ?>"><?php echo $text_max_unused; ?></a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_max_unused; ?>"><?php echo $text_max_unused; ?></a>
+						<?php } ?>
+					</td>
+					<td><?php echo $text_time_last; ?></td>
+					<td><?php echo $text_time_expire; ?></td>
+					<td><?php echo $text_action; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td width="12%"><input type="text" name="card_iccid" value="<?php echo $card_iccid ? $card_iccid : ''; ?>" size="16" /></td>
+					<td><select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td>
+						<select name="time_expire">
+							<option value="*"></option>
+							<?php foreach ($arr_date_status as $k =>$v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k == $time_expire) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<!--<td></td>-->
+				</tr>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td>
+						<a href="/gprs/paylog/pay?card_id=<?php echo $item['card_id']; ?>"><?php echo $item['card_iccid']; ?></a>
+					</td>
+					<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : ''; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_month']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['used_month']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['used_total']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['max_unused']); ?></td>
+					<td><?php echo $item['time_last']; ?></td>
+					<td><?php echo $item['time_expire']; ?><?php if($item['time_expire'] <= $item['today']) { ?><span class="required"><?php echo $text_time_out; ?></span><?php } ?></td>
+					<td> [ <a href="javascript:void()" onclick="cardDetails(this)"
+							  ciccid="<?php echo $item['card_iccid']; ?>"
+							  csn="<?php echo $item['card_sn']; ?>"
+							  cname="<?php echo $item['card_name']; ?>"
+							  oname="<?php echo $item['owner_name']; ?>"
+							  ocdi="<?php echo $item['owner_cdi']; ?>"
+							  ogender="<?php echo $item['owner_gender']==0 ? '保密' : ($item['owner_gender']==1 ? '男' : '女'); ?>"
+							  atime="<?php echo $item['time_added']; ?>"
+							  ptime="<?php echo $item['time_paid']; ?>"
+							  stime="<?php echo $item['time_stop']; ?>"
+							  ltime="<?php echo $item['time_last']; ?>" ><?php echo $button_see_details; ?>
+						</a> ]
+					</td>
+					<!--<td>
+						<?php if($item['is_normal']) { ?>
+						<button class="button btn-red" onclick="cardStop(this,<?php echo $item['card_id']; ?>,0)">停号</button>
+						<?php } else { ?>
+						<button class="button btn-green" onclick="cardStop(this,<?php echo $item['card_id']; ?>,1)">开启</button>
+						<?php } ?>
+					</td>-->
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="9"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+function enterPress(){
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/card?';
+
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'orgId=' + encodeURIComponent(org_id);
+	}
+
+	var card_iccid = $('input[name=\'card_iccid\']').val();
+	if (card_iccid)
+	{
+		url += '&iccid=' + encodeURIComponent(card_iccid);
+	}
+
+	var time_expire = $('select[name=\'time_expire\']').val();
+	if (time_expire != '*')
+	{
+		url += '&expire=' + encodeURIComponent(time_expire);
+	}
+	location = url;
+}
+
+function cardStop(obj, card_id, is_normal)
+{
+	if (is_normal)
+	{
+		var confirm_text = '<?php echo $text_confirm_start; ?>';
+		var onclick_fun = "cardStop(this," + card_id + ",0)";
+	}
+	else
+	{
+		var confirm_text = '<?php echo $text_confirm_stop; ?>';
+		var onclick_fun = "cardStop(this," + card_id + ",1)";
+	}
+	if (!confirm(confirm_text))
+	{
+		return;
+	}
+	$.get('/gprs/card/stop', {'card_id': card_id, 'is_normal': is_normal}, function (res)
+	{
+		if (res != 'ok')
+		{
+			alert(res)
+		}
+		else
+		{
+			if (is_normal)
+			{
+				$(obj).text('停号');
+				$(obj).removeClass('btn-green');
+				$(obj).addClass('btn-red');
+			}
+			else
+			{
+				$(obj).text('开启');
+				$(obj).removeClass('btn-red');
+				$(obj).addClass('btn-green');
+			}
+			$(obj).attr('onclick', onclick_fun);
+		}
+	});
+}
+
+function cardDetails(obj)
+{
+	var html='<table class="list">';
+
+	var csn = $(obj).attr('csn');
+	if (csn != '')
+	{
+		html += '<tr><td><?php echo $text_card_sn; ?></td><td>' + csn + '</td></tr>';
+	}
+
+	var cname = $(obj).attr('cname');
+	if (cname != '')
+	{
+		html += '<tr><td><?php echo $text_card_name; ?></td><td>' + cname + '</td></tr>';
+	}
+
+	var oname = $(obj).attr('oname');
+	if (oname != '')
+	{
+		html += '<tr><td><?php echo $text_owner_name; ?></td><td>' + oname + '</td></tr>';
+	}
+
+	var ocdi = $(obj).attr('ocdi');
+	if (ocdi != '')
+	{
+		html += '<tr><td><?php echo $text_owner_cdi; ?></td><td>' + ocdi + '</td></tr>';
+	}
+
+	var ogender = $(obj).attr('ogender');
+	if (ogender != '')
+	{
+		html += '<tr><td><?php echo $text_owner_gender; ?></td><td>' + ogender + '</td></tr>';
+	}
+
+	var atime = $(obj).attr('atime');
+	if (atime != '')
+	{
+		html += '<tr><td><?php echo $text_time_active; ?></td><td>' + atime + '</td></tr>';
+	}
+
+	var ptime = $(obj).attr('ptime');
+	if (ptime != '')
+	{
+		html += '<tr><td><?php echo $text_time_paid; ?></td><td>'+ ptime+'</td></tr>';
+	}
+
+	var stime = $(obj).attr('stime');
+	if (stime != '')
+	{
+		html += '<tr><td><?php echo $text_time_stop; ?></td><td>' + stime + '</td></tr>';
+	}
+
+	var ltime = $(obj).attr('ltime');
+	if (ltime != '')
+	{
+		html += '<tr><td><?php echo $text_time_last; ?></td><td>' + ltime + '</td></tr>';
+	}
+	html+='</table>';
+
+	$(obj).parent().parent().css({'background':'#FFFFA0', 'color':'#FF0000'});
+
+	$.fn.tboxy({
+		title    : '<?php echo $text_more_detail; ?> - ' + $(obj).attr('ciccid'), width: '500px', value: html,
+		closeExec: function () {$(obj).parent().parent().css({'background': '', 'color': ''})}
+	});
+}
+
+function showDetails()
+{
+	var $url = '/gprs/card/chart';
+	$.fn.tboxy({title: '<?php echo $text_card_chart; ?>', width: '1400px', value: {type: 'url', val: $url}});
+}
+</script>
+<?php echo $page_footer; ?>

@@ -1,0 +1,234 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?><div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<?php if ($success) { ?>
+	<div class="success"><?php echo $success; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_card_abnormal; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/abnormal" class="button btn-red"><?php echo $button_reset; ?></a>
+				<a onclick="$('form').submit();" class="button btn-yellow"><?php echo $button_export; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<form action="<?php echo $export; ?>" method="post" enctype="multipart/form-data" id="form" onkeypress="if(event.keyCode==13||event.which==13){return false;}">
+				<table class="list">
+					<thead>
+						<tr>
+							<td width="1" style="text-align: center;"><input type="checkbox" onclick="$('input[name*=\'selected\']').prop('checked', this.checked);" /></td>
+							<td><?php echo $text_card_iccid; ?></td>
+							<td><?php echo $text_user_firstname; ?></td>
+							<td>
+								<?php if ($sort == 'difference') { ?>
+								<a href="<?php echo $sort_difference; ?>"><?php echo $text_difference; ?>
+									<i class="<?php echo strtolower($order); ?>"></i>
+								</a>
+								<?php } else { ?>
+								<a href="<?php echo $sort_difference; ?>"><?php echo $text_difference; ?>
+									<i class="harrow"></i>
+								</a>
+								<?php } ?>
+							</td>
+							<td>
+								<?php if ($sort == 'used_total') { ?>
+								<a href="<?php echo $sort_used_total; ?>"><?php echo $text_yunovo_used_total; ?>
+									<i class="<?php echo strtolower($order); ?>"></i>
+								</a>
+								<?php } else { ?>
+								<a href="<?php echo $sort_used_total; ?>"><?php echo $text_yunovo_used_total; ?>
+									<i class="harrow"></i>
+								</a>
+								<?php } ?>
+							</td>
+							<td>
+								<?php if ($sort == 'unicom_total') { ?>
+								<a href="<?php echo $sort_unicom_total; ?>"><?php echo $text_unicom_used_total; ?>
+									<i class="<?php echo strtolower($order); ?>"></i>
+								</a>
+								<?php } else { ?>
+								<a href="<?php echo $sort_unicom_total; ?>"><?php echo $text_unicom_used_total; ?>
+									<i class="harrow"></i>
+								</a>
+								<?php } ?>
+							</td>
+							<td>
+								<?php if ($sort == 'max_unused') { ?>
+								<a href="<?php echo $sort_max_unused; ?>"><?php echo $text_max_unused; ?>
+									<i class="<?php echo strtolower($order); ?>"></i>
+								</a>
+								<?php } else { ?>
+								<a href="<?php echo $sort_max_unused; ?>"><?php echo $text_max_unused; ?>
+									<i class="harrow"></i>
+								</a>
+								<?php } ?>
+							</td>
+							<td>
+								<?php if ($sort == 'pay_total') { ?>
+								<a href="<?php echo $sort_pay_total; ?>"><?php echo $text_pay_total; ?>
+									<i class="<?php echo strtolower($order); ?>"></i>
+								</a>
+								<?php } else { ?>
+								<a href="<?php echo $sort_pay_total; ?>"><?php echo $text_pay_total; ?>
+									<i class="harrow"></i>
+								</a>
+								<?php } ?>
+							</td>
+							<td class='center'><?php echo $text_action; ?></td>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="filter center">
+							<td></td>
+							<td><input type="text" name="card_iccid" value="<?php echo !empty($card_iccid) ? $card_iccid : ''; ?>" size="5" /></td>
+							<td>
+								<select name="filter_org_id">
+									<option value="*"></option>
+									<?php foreach ($orgs as $k => $v) { ?>
+									<option value="<?php echo $k; ?>" <?php if ($k == $filter_org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+									<?php } ?>
+								</select>
+							</td>
+							<td>
+								<select name="filter_difference">
+								<?php foreach ($arr_difference as $k => $v) { ?>
+									<option value="<?php echo $k; ?>" <?php if ($k == $filter_difference) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+								</select>
+							</td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td>
+								<select name="unicom_stop">
+								<option value="*"></option>
+								<?php foreach ($arr_card_status as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($k === $unicom_stop) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+								</select>
+							</td>
+						</tr>
+						<?php if (!empty($items)) { ?>
+						<?php foreach ($items as $item) { ?>
+						<tr>
+							<td><input type="checkbox" name="selected[]" value="<?php echo $item['card_id']; ?>" /></td>
+							<td><?php echo $item['card_iccid']; ?></td>
+							<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : ''; ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['unicom_total']-$item['used_total']); ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['used_total']); ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['unicom_total']); ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['max_unused']); ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['pay_total']); ?></td>
+							<td class="center">
+								<?php if(!$item['unicom_stop']) { ?>
+								<a class="button btn-red" onclick="cardStop(this,<?php echo $item['card_id']; ?>,0,'<?php echo $item['card_sn']; ?>')">停号</a>
+								<?php } else { ?>
+								<a class="button btn-green" onclick="cardStop(this,<?php echo $item['card_id']; ?>,1,'<?php echo $item['card_sn']; ?>')">开启</a>
+								<?php } ?>
+							</td>
+						</tr>
+						<?php } ?>
+						<?php } else { ?>
+						<tr>
+							<td class="center" colspan="9"><?php echo $text_no_results; ?></td>
+						</tr>
+						<?php } ?>
+					</tbody>
+				</table>
+				<div class="pagination"><?php echo $pagination; ?></div>
+			</form>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/abnormal?';
+	var filter_org_id = $('select[name=\'filter_org_id\']').val();
+	if (filter_org_id != '*')
+	{
+		url += '&filter_org_id=' + encodeURIComponent(filter_org_id);
+	}
+
+	var card_iccid = $('input[name=\'card_iccid\']').val();
+	if (card_iccid)
+	{
+		url += '&card_iccid=' + encodeURIComponent(card_iccid);
+	}
+
+	var filter_difference = $('select[name=\'filter_difference\']').val();
+	if (filter_difference != '*')
+	{
+		url += '&filter_difference=' + encodeURIComponent(filter_difference);
+	}
+
+	var unicom_stop = $('select[name=\'unicom_stop\']').val();
+	if (unicom_stop != '*')
+	{
+		url += '&unicom_stop=' + encodeURIComponent(unicom_stop);
+	}
+
+	location = url;
+}
+function cardStop(obj, card_id, opFlag, card_sn)
+{
+	if (opFlag)
+	{
+		var confirm_text = '<?php echo $text_confirm_start; ?>';
+		var onclick_fun = "cardStop(this," + card_id + ",0" + card_sn + ")";
+	}
+	else
+	{
+		var confirm_text = '<?php echo $text_confirm_stop; ?>';
+		var onclick_fun = "cardStop(this," + card_id + ",1" + card_sn + ")";
+	}
+	if (!confirm(confirm_text))
+	{
+		return;
+	}
+	$(obj).hide();
+	$(obj).after('<span id="loading" class="wait">&nbsp;<img src="/view/image/loading.gif" /></span>');
+	$.get('/gprs/uion/stop', {'card_id': card_id, 'opFlag': opFlag, 'number': card_sn}, function (res)
+	{
+		if (res != 'ok')
+		{
+			alert(res)
+		}
+		else
+		{
+			$('#loading').remove();
+			$(obj).show();
+			if (opFlag)
+			{
+				$(obj).text('停号');
+				$(obj).removeClass('btn-green');
+				$(obj).addClass('btn-red');
+			}
+			else
+			{
+				$(obj).text('开启');
+				$(obj).removeClass('btn-red');
+				$(obj).addClass('btn-green');
+			}
+			$(obj).attr('onclick', onclick_fun);
+		}
+	});
+}
+</script>
+<?php echo $page_footer; ?>

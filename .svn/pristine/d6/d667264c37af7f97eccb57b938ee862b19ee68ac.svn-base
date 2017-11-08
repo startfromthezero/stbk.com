@@ -1,0 +1,104 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_pay_pack; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/pay_pack" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="find">
+				<tbody>
+					<tr>
+						<td width="32%">
+							<?php echo $text_org_filter; ?>
+							<select name="org_id">
+								<option value="*"></option>
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>
+								><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td width="32%">
+							<?php echo $text_pay_way; ?>
+							<select name="pay_method">
+								<option value="*"></option>
+								<?php foreach ($arr_pay_type as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($k == $pay_method) { ?> selected="selected"<?php } ?>
+								><?php echo $v; ?></option><?php } ?>
+							</select>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_pack_gprs; ?></td>
+					<td><?php echo $text_pack_price; ?></td>
+					<td><?php echo $text_paid_log; ?></td>
+					<td><?php echo $text_paid_total; ?></td>
+					<td><?php echo $text_nopaid_log; ?></td>
+					<td><?php echo $text_nopaid_total; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_amount']); ?></td>
+					<td><?php echo $this->currency->format($item['gprs_price']); ?></td>
+					<td><?php echo $item['paid_count']; ?></td>
+					<td><?php echo $this->currency->format($item['paid_total']); ?></td>
+					<td><?php echo $item['nopaid_count']; ?></td>
+					<td><?php echo $this->currency->format($item['nopaid_total']); ?></td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="6"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/pay_pack?';
+
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'org_id=' + encodeURIComponent(org_id);
+	}
+
+	var pay_method = $('select[name=\'pay_method\']').val();
+	if (pay_method != '*')
+	{
+		url += '&pay_method=' + encodeURIComponent(pay_method);
+	}
+
+	location = url;
+}
+</script>
+<?php echo $page_footer; ?>

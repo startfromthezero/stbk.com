@@ -1,0 +1,125 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_month_report; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/month_report" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_user_firstname; ?></td>
+					<td><?php echo $text_mdate; ?></td>
+					<td><?php echo $text_paid_count; ?></td>
+					<td><?php echo $text_nopaid_count; ?></td>
+					<td><?php echo $text_gprs_count; ?></td>
+					<td><?php echo $text_money_count; ?></td>
+					<td><?php echo $text_nopaid_total; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td>
+						<select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td>
+						<select name="mdate">
+							<option value="*"></option>
+							<?php foreach ($mdates as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $mdate) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+				</tr>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><a href="/gprs/pay_report?org_id=<?php echo $item['org_id']; ?>"><?php echo $orgs[$item['org_id']]; ?></a></td>
+					<td><?php echo $item['mdate']; ?></td>
+					<td><?php echo $item['paid_count']; ?></td>
+					<td><?php echo $item['nopaid_count']; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_count']); ?></td>
+					<td><?php echo $this->currency->format($item['paid_total']); ?></td>
+					<td><?php echo $this->currency->format($item['nopaid_total']); ?></td>
+				</tr>
+				<?php } ?>
+				<tr>
+					<td><span class="required"><?php echo $text_total; ?></span></td>
+					<td></td>
+					<td><span class="required"><?php echo $total['paid_amount']; ?></span></td>
+					<td><span class="required"><?php echo $total['nopaid_amount']; ?></span></td>
+					<td><span class="required"><?php echo modules_funs::gpgsFormat($total['gprs_count']); ?></span></td>
+					<td><span class="required"><?php echo $this->currency->format($total['paid_total']); ?></span></td>
+					<td><span class="required"><?php echo $this->currency->format($total['nopaid_total']); ?></span></td>
+				</tr>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="7"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/month_report?';
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'org_id=' + org_id;
+	}
+
+	var mdate = $('select[name=\'mdate\']').val();
+	if (mdate != '*')
+	{
+		url += '&mdate=' + mdate;
+	}
+	location = url;
+}
+
+$('#date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+</script>
+<?php echo $page_footer; ?>

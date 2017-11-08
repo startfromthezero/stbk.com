@@ -1,0 +1,64 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a
+				href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?>
+	<div class="warning"><?php echo $error_warning; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/download.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<?php if ($mpermission) { ?><a onclick="$('#form').submit();" class="button btn-green"><?php echo $button_save; ?></a><?php } ?>
+				<a onclick="location = '<?php echo $cancel; ?>';" class="button btn-darkblue"><?php echo $button_cancel; ?></a>
+			</div>
+		</div>
+		<div class="content">
+			<form action="<?php echo $action; ?>" method="post" enctype="multipart/form-data" id="form">
+				<table class="form">
+					<tr>
+						<td><span class="required">*</span><?php echo $text_gprs_user; ?>：</td>
+						<td>
+							<?php if ($gprs_alert_id) { ?>
+							<input type="text" disabled value="<?php echo isset($orgs[$org_id]) ? $orgs[$org_id] : $text_common_user; ?>" style="border:none;background:none;" />
+							<?php } else {?>
+							<select name="org_id">
+							<?php if ($user_group_id <= 1) { ?>
+							<option value="0" <?php if (0 == $org_id) { ?> selected="selected"<?php } ?>><?php echo $text_common_user; ?></option>
+							<?php } ?>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v ; ?>
+							</option>
+							<?php } ?>
+							</select>
+							<?php } ?>
+							<?php if ($error_org) { ?><span class="error"><?php echo $error_org; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $text_gprs_alert; ?>（MB）：</td>
+						<td><input type="text" maxlength="8" name="alert_value" value="<?php echo $alert_value; ?>" />
+							<?php if ($error_alert_value) { ?><span class="error"><?php echo $error_alert_value; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr>
+						<td><?php echo $text_alert_tpl; ?>：</td>
+						<td><textarea name="alert_tpl1" rows="5" cols="90"><?php echo $alert_tpl1; ?></textarea>
+							<?php if ($error_alert_tpl1) { ?><span class="error"><?php echo $error_alert_tpl1; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr>
+						<td><?php echo $text_finish_tpl; ?>：</td>
+						<td><textarea name="alert_tpl2" rows="5" cols="90"><?php echo $alert_tpl2; ?></textarea>
+							<?php if ($error_alert_tpl2) { ?><span class="error"><?php echo $error_alert_tpl2; ?></span><?php } ?>
+						</td>
+					</tr>
+				</table>
+			</form>
+		</div>
+	</div>
+</div><?php echo $page_footer; ?>

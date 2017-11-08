@@ -1,0 +1,87 @@
+<?php
+class ControllerPaymentAlipay extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('payment/alipay');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$vrs = $this->language->data;
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate())
+		{
+			$this->registry->model('setting/setting');
+			$this->model_setting_setting->editSetting('alipay', $this->request->post);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('extension/payment'));
+		}
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_payment'),
+			'href'      => $this->url->link('extension/payment'),
+			'separator' => ' :: '
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('payment/alipay'),
+			'separator' => ' :: '
+		);
+
+		$vrs['action']           = $this->url->link('payment/alipay');
+		$vrs['cancel']           = $this->url->link('extension/payment');
+		$vrs['alipay_partner']   = isset($this->request->post['alipay_partner']) ? $this->request->post['alipay_partner'] : $this->config->get('alipay_partner');
+		$vrs['alipay_seller_id'] = isset($this->request->post['alipay_seller_id']) ? $this->request->post['alipay_seller_id'] : $this->config->get('alipay_seller_id');
+		$vrs['alipay_key']       = isset($this->request->post['alipay_key']) ? $this->request->post['alipay_key'] : $this->config->get('alipay_key');
+
+		$vrs['error_warning']   = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['error_partner']   = isset($this->error['partner']) ? $this->error['partner'] : '';
+		$vrs['error_seller_id'] = isset($this->error['seller_id']) ? $this->error['seller_id'] : '';
+		$vrs['error_key']       = isset($this->error['key']) ? $this->error['key'] : '';
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/payment/alipay.tpl', $vrs);
+	}
+
+	private function validate()
+	{
+		if (!$this->user->hasPermission('modify', 'payment/alipay'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		if (!$this->request->post['alipay_partner'])
+		{
+			$this->error['partner'] = $this->language->get('error_partner');
+		}
+
+		if (!$this->request->post['alipay_seller_id'])
+		{
+			$this->error['seller_id'] = $this->language->get('error_seller_id');
+		}
+
+		if (!$this->request->post['alipay_key'])
+		{
+			$this->error['key'] = $this->language->get('error_key');
+		}
+
+		return !$this->error;
+	}
+}
+?>

@@ -1,0 +1,262 @@
+<?php
+class ControllerGprsCardUsed extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_gprs_card_used'));
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	/**
+	 * 流量值自动单位转换
+	 *
+	 * @param float $gprs 流量值
+	 * @return string 带单位流量值
+	 */
+	private function _gpgsFormat($gprs)
+	{
+		$GB = 1024;
+		$TB = 1024 * 1024;
+
+		if (abs($gprs) < $GB)
+		{
+			$gprs = round($gprs, 2) . 'M';
+		}
+		else if (abs($gprs) >= $GB && $gprs < $TB)
+		{
+			$gprs = round($gprs / $GB, 2) . 'G';
+		}
+		else if (abs($gprs) >= $TB)
+		{
+			$gprs = round($gprs / $TB, 2) . 'T';
+		}
+
+		return $gprs;
+	}
+
+	/**
+	 *导出月使用流量统计
+	 *
+	 * @return string
+	 */
+	public function export()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_gprs_card_used'));
+		$this->registry->model('gprs/card');
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$orgs = $this->model_user_user->getOrgs();
+
+		if ($this->user->hasPermission('modify', 'gprs/card_used'))
+		{
+			$data = array(
+				'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+				'filter_date_start' => $this->request->get_var('date_start', 's'),
+				'filter_date_end'   => $this->request->get_var('date_end')
+			);
+
+			$items = $this->model_gprs_card->getCardUsed($data);
+			if (empty($items))
+			{
+				/**
+				 * 连接组合处理
+				 */
+				$url = '';
+				$url .= isset($this->request->post['org_id']) ? '&org_id=' . $this->request->post['org_id'] : '';
+				$url .= isset($this->request->post['date_start']) ? '&date_start=' . $this->request->post['date_start'] : '';
+				$url .= isset($this->request->post['date_end']) ? '&date_end=' . $this->request->post['date_end'] : '';
+
+				$this->session->data['error'] = $this->language->get('error_export_empty');
+				$this->registry->redirect($this->url->link('gprs/card_used', $url, true));
+			}
+
+			$str = "机构名称,售卡数量,未激活数量,未激活率,已激活数量,已激活率,流量总计,使用流量,剩余流量,使用流量率\n";
+			foreach ($items as $item)
+			{
+				$not_activated      = $item['card_count'] - $item['activated'];
+				$not_activated_rate = round($not_activated / $item['card_count'] * 100, 2) . '%';
+				$activated_rate     = round($item['activated'] / $item['card_count'] * 100, 2) . '%';
+				$gprs_count         = $this->_gpgsFormat($item['unused_count'] + $item['used_count']);
+				$used_count         = $this->_gpgsFormat($item['used_count']);
+				$unused_count       = $this->_gpgsFormat($item['unused_count']);
+				$used_rate          = (round($item['used_count'] / ($item['unused_count'] + $item['used_count']) * 100, 2)) . '%';
+				$str .= "{$orgs[$item['org_id']]},{$item['card_count']},{$not_activated},{$not_activated_rate},{$item['activated']},{$activated_rate},{$gprs_count},{$used_count},{$unused_count},{$used_rate}\n";
+			}
+
+			$total              = $this->model_gprs_card->getCardUsed($data, '', true);
+			$total              = $total[0];
+			$not_activated      = $total['card_count'] - $total['activated'];
+			$not_activated_rate = round($not_activated / $total['card_count'] * 100, 2) . '%';
+			$activated_rate     = round($total['activated'] / $total['card_count'] * 100, 2) . '%';
+			$gprs_count         = $this->_gpgsFormat($total['unused_count'] + $total['used_count']);
+			$used_count         = $this->_gpgsFormat($total['used_count']);
+			$unused_count       = $this->_gpgsFormat($total['unused_count']);
+			$used_rate          = (round($total['used_count'] / ($total['unused_count'] + $total['used_count']) * 100, 2)) . '%';
+			$str .= "总计,{$total['card_count']},{$not_activated},{$not_activated_rate},{$total['activated']},{$activated_rate},{$gprs_count},{$used_count},{$unused_count},{$used_rate}";
+
+			$this->response->addheader('Pragma: public');
+			$this->response->addheader('Expires: 0');
+			$this->response->addheader('Content-Description: File Transfer');
+			$this->response->addheader('Content-Type: text/csv');
+			$this->response->addheader('Content-Disposition: attachment; filename=' . date('Y-m-d_H-i-s', time()) . '_export.csv');
+			$this->response->addheader('Content-Transfer-Encoding: binary');
+
+			return iconv('utf-8', 'gb2312', $str);
+		}
+		else
+		{
+			$this->session->data['error'] = $this->language->get('error_permission');
+			$this->registry->redirect($this->url->link('gprs/card_used'));
+		}
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_gprs_card_used'),
+			'href'      => $this->url->link('gprs/card_used'),
+			'separator' => ' :: '
+		);
+
+		if (isset($this->session->data['error']))
+		{
+			$vrs['error_warning'] = $this->session->data['error'];
+			unset($this->session->data['error']);
+		}
+		else
+		{
+			$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+		}
+
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+		$vrs['export'] = $this->url->link('gprs/card_used/export');
+
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $orgs = $this->model_user_user->getOrgs();
+
+		$vrs['page']       = $page = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data              = array(
+			'start'             => ($page - 1) * '10',
+			'limit'             => '10',
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_date_start' => $this->request->get_var('date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('date_end')
+		);
+		$vrs['org_id']     = $data['filter_org_id'];
+		$vrs['date_start'] = $data['filter_date_start'];
+		$vrs['date_end']   = $data['filter_date_end'];
+
+		$vrs['card_used'] = $this->model_gprs_card->getCardUsed($data);
+		$subtotal         = $this->model_gprs_card->getCardUsed($data, '', '', true);
+		$vrs['subtotal']  = $subtotal[0];
+		unset($data['start'], $data['limit']);
+		$total        = $this->model_gprs_card->getCardUsed($data, '', true);
+		$vrs['total'] = $total[0];
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+		$url .= isset($this->request->get['date_start']) ? '&date_start=' . $this->request->get['date_start'] : '';
+		$url .= isset($this->request->get['date_end']) ? '&date_end=' . $this->request->get['date_end'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_card->getCardUsed($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = '10';
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/card_used', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/card_used.tpl', $vrs);
+	}
+
+	/**
+	 * 机构充值记录统计图表
+	 */
+	public function chart()
+	{
+		$this->registry->language('gprs/card');
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$orgs = $this->model_user_user->getOrgs();
+
+		$changeId = $this->request->get_var('changeId');
+		$changeId = $changeId ? $changeId : 1;
+		$page     = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data     = array(
+			'start'             => ($page - 1) * '10',
+			'limit'             => '10',
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_date_start' => $this->request->get_var('date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('date_end')
+		);
+
+		$this->registry->model('gprs/card');
+		$card_used = $this->model_gprs_card->getCardUsed($data);
+
+		/**
+		 * 流量卡统计图表
+		 */
+		$org          = $activated = $not_activated = array();
+		$unused_count = $used_count = array();
+		foreach ($card_used as $v)
+		{
+			$org[]           = $orgs[$v['org_id']];
+			$activated[]     = (int)$v['activated'];
+			$not_activated[] = $v['card_count'] - $v['activated'];
+			$unused_count[]  = (int)$v['unused_count'];
+			$used_count[]    = (int)$v['used_count'];
+		}
+
+		$vrs['org']           = json_encode($org);
+		$vrs['activated']     = json_encode($activated);
+		$vrs['not_activated'] = json_encode($not_activated);
+		$vrs['unused_count']  = json_encode($unused_count);
+		$vrs['used_count']    = json_encode($used_count);
+
+		return $this->view("template/gprs/card_used_chart{$changeId}.tpl", $vrs);
+	}
+}
+?>

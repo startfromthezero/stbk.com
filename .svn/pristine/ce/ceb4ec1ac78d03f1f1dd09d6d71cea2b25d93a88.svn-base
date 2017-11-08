@@ -1,0 +1,48 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/report.png"><?php echo $org['name']; ?>--<?php echo $text_org_topup_detail;?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a href="/gprs/report" class="button btn-darkblue"><?php echo $button_back; ?></a>
+			</div>
+		</div>
+		<div class="content">
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_card_iccid; ?></td>
+					<td><?php echo $text_pay_count; ?></td>
+					<td><?php echo $text_gprs_count; ?></td>
+					<td><?php echo $text_money_count; ?></td>
+					<td><?php echo $text_action; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><?php echo $item['card_iccid']; ?></td>
+					<td><?php echo $item['pay_count']; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_count']); ?></td>
+					<td><?php echo $this->currency->format($item['money_count']); ?></td>
+					<td> [ <a href="/gprs/card/pay?card_id=<?php echo $item['card_id']; ?>"><?php echo $button_see_details; ?></a> ] </td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="6"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<?php echo $page_footer; ?>

@@ -1,0 +1,74 @@
+<?php
+// Heading
+$_['heading_title'] = 'Dashboard';
+
+$_['text_total']        = 'Total';
+$_['text_org_name']     = 'Org name';
+$_['text_sell_num']     = 'Sell cards amount';
+$_['text_stop_num']     = 'Stop cards amount';
+$_['text_renewal_num']  = 'Number of renewals';
+$_['text_rate']         = 'Renewal Rate';
+$_['text_not_act_num']  = 'Nonactivated amount';
+$_['text_not_act_rate'] = 'Nonactivated Rate';
+$_['text_act_num']      = 'Activate amount';
+$_['text_act_rate']     = 'Activated Rate';
+$_['text_paid_log']     = 'Paid Record';
+$_['text_nopaid_log']   = 'No payment record';
+$_['text_paid_total']   = 'Amount paid';
+$_['text_nopaid_total'] = 'Unpaid Amount';
+$_['text_org_paylog']   = 'Org topup amount';
+$_['text_org_gprs']     = 'Org topup gprs(MB)';
+$_['text_org_price']    = 'Org topup price(yuan)';
+
+// Text
+$_['org_topup_stats']   = 'Bodies Top up statistics';
+$_['text_org_name']     = 'Organization';
+$_['text_pay_type']     = 'Payment';
+$_['text_paid_log']     = 'Paid record';
+$_['text_nopaid_log']   = 'No payment record';
+$_['text_paid_total']   = 'Amount paid';
+$_['text_nopaid_total'] = 'Unpaid amount';
+
+// Error
+$_['error_install']     = 'Warning: Install folder still exists and should be deleted for security reasons!';
+$_['error_image']       = 'Warning: Image directory %s not writeable!';
+$_['error_image_cache'] = 'Warning: Image cache directory %s not writeable!';
+$_['error_cache']       = 'Warning: Cache directory %s not writeable!';
+$_['error_download']    = 'Warning: Download directory %s not writeable!';
+$_['error_logs']        = 'Warning: Log directory %s not writeable!';
+
+$_['arr_color'] = array(
+	'#C1232B',
+	'#B5C334',
+	'#FCCE10',
+	'#E87C25',
+	'#27727B',
+	'#FE8463',
+	'#9BCA63',
+	'#FAD860',
+	'#F3A43B',
+	'#60C0DD',
+	'#D7504B',
+	'#C6E579',
+	'#F4E001',
+	'#F0805A',
+	'#26C0C0',
+	'#ff7f50',
+	'#87cefa',
+	'#da70d6',
+	'#32cd32',
+	'#6495ed',
+	'#ff69b4',
+	'#ba55d3',
+	'#cd5c5c',
+	'#ffa500',
+	'#40e0d0',
+	'#d575d0',
+	'#e4fefe',
+	'#337f7c',
+	'#e5b827',
+	'#7cb9e1',
+	'#7987ba',
+	'#575add'
+);
+?>

@@ -1,0 +1,321 @@
+<?php
+class ControllerGprsPack extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/pack');
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->registry->model('gprs/pack');
+
+		return $this->getList();
+	}
+
+	/*
+	 * 开启与停止流量套餐
+	 */
+	public function stop()
+	{
+		$this->registry->language('gprs/pack');
+		$this->registry->model('gprs/pack');
+		$data = array(
+			'pack_id'     => $this->request->get_var('pack_id', 'i'),
+			'gprs_status' => $this->request->get_var('gprs_status', 'i') ? 1 : 0,
+		);
+
+		echo ($this->model_gprs_pack->update($data)) ? 'ok' : $this->language->get('error_pack');
+	}
+
+	public function insert()
+	{
+		$this->registry->language('gprs/pack');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/pack');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$data = array(
+				'org_id'      => $this->request->get_var('gprs_user', 'i'),
+				'gprs_amount' => $this->request->get_var('gprs_amount', 'f'),
+				'gprs_price'  => $this->request->get_var('gprs_price', 'f'),
+				'gprs_memo'   => $this->request->get_var('gprs_memo', 's'),
+				'live_month'  => $this->request->get_var('live_month', 'i')
+			);
+			$this->model_gprs_pack->insert($data);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('gprs/pack'));
+		}
+
+		return $this->getForm();
+	}
+
+	public function update()
+	{
+		$this->registry->language('gprs/pack');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/pack');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$data = array(
+				'pack_id'     => $this->request->get_var('pack_id', 'i'),
+				'org_id'      => $this->request->get_var('gprs_user', 'i'),
+				'gprs_amount' => $this->request->get_var('gprs_amount', 'f'),
+				'gprs_price'  => $this->request->get_var('gprs_price', 'f'),
+				'gprs_memo'   => $this->request->get_var('gprs_memo', 's'),
+				'live_month'  => $this->request->get_var('live_month', 'i')
+			);
+			$this->model_gprs_pack->update($data);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('gprs/pack'));
+		}
+
+		return $this->getForm();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/pack'),
+			'separator' => ' :: '
+		);
+
+		$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+
+		$vrs['insert']  = $this->url->link('gprs/pack/insert');
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$page                 = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data                 = array(
+			'start'         => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'         => $this->config->get('config_admin_limit'),
+			'filter_org_id' => isset($this->request->get['org_id']) ? $this->request->get_var('org_id', 'i') : ''
+		);
+		$vrs['org_id']        = $data['filter_org_id'];
+		$vrs['user_group_id'] = $this->session->data['user_group_id'];
+		$vrs['items']         = $this->model_gprs_pack->getItems($data);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_gprs_pack->getItems($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/pack', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/pack_list.tpl', $vrs);
+	}
+
+	private function getForm()
+	{
+		$vrs                      = $this->language->data;
+		$vrs['error_warning']     = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['error_gprs_amount'] = isset($this->error['gprs_amount']) ? $this->error['gprs_amount'] : '';
+		$vrs['error_gprs_user']   = isset($this->error['gprs_user']) ? $this->error['gprs_user'] : '';
+		$vrs['error_gprs_price']  = isset($this->error['gprs_price']) ? $this->error['gprs_price'] : '';
+		$vrs['error_gprs_memo']   = isset($this->error['gprs_memo']) ? $this->error['gprs_memo'] : '';
+		$vrs['error_live_month']  = isset($this->error['live_month']) ? $this->error['live_month'] : '';
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/pack'),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs']          = $this->model_user_user->getOrgs();
+		$vrs['user_group_id'] = $this->session->data['user_group_id'];
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+
+		$vrs['cancel'] = $this->url->link('gprs/pack', $url, true);
+
+		if (!isset($this->request->get['pack_id']))
+		{
+			$vrs['action'] = $this->url->link('gprs/pack/insert', $url, true);
+		}
+		else
+		{
+			$vrs['action'] = $this->url->link('gprs/pack/update', 'pack_id=' . $this->request->get['pack_id'] . $url, true);
+		}
+
+		if (isset($this->request->get['pack_id']))
+		{
+			$pack_info = $this->model_gprs_pack->get($this->request->get_var('pack_id', 'i'));
+		}
+
+		$vrs['pack_id'] = isset($this->request->get['pack_id']) ? $this->request->get['pack_id'] : 0;
+
+		if (isset($this->request->post['gprs_user']))
+		{
+			$vrs['gprs_user'] = $this->request->post['gprs_user'];
+		}
+		elseif (!empty($pack_info))
+		{
+			$vrs['gprs_user'] = $pack_info['org_id'];
+		}
+		else
+		{
+			$vrs['gprs_user'] = '';
+		}
+
+		if (isset($this->request->post['gprs_amount']))
+		{
+			$vrs['gprs_amount'] = $this->request->post['gprs_amount'];
+		}
+		elseif (!empty($pack_info))
+		{
+			$vrs['gprs_amount'] = $pack_info['gprs_amount'];
+		}
+		else
+		{
+			$vrs['gprs_amount'] = '';
+		}
+
+		if (isset($this->request->post['gprs_price']))
+		{
+			$vrs['gprs_price'] = $this->request->post['gprs_price'];
+		}
+		elseif (!empty($pack_info))
+		{
+			$vrs['gprs_price'] = $pack_info['gprs_price'];
+		}
+		else
+		{
+			$vrs['gprs_price'] = '';
+		}
+
+		if (isset($this->request->post['live_month']))
+		{
+			$vrs['live_month'] = $this->request->post['live_month'];
+		}
+		elseif (!empty($pack_info))
+		{
+			$vrs['live_month'] = $pack_info['live_month'];
+		}
+		else
+		{
+			$vrs['live_month'] = '';
+		}
+
+		if (isset($this->request->post['gprs_memo']))
+		{
+			$vrs['gprs_memo'] = $this->request->post['gprs_memo'];
+		}
+		elseif (!empty($pack_info))
+		{
+			$vrs['gprs_memo'] = $pack_info['gprs_memo'];
+		}
+		else
+		{
+			$vrs['gprs_memo'] = '';
+		}
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/pack_form.tpl', $vrs);
+	}
+
+	private function validateForm()
+	{
+		if (!$this->user->hasPermission('modify', 'gprs/pack'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+		if (!isset($this->request->post['gprs_user']))
+		{
+			$this->error['gprs_user'] = $this->language->get('error_gprs_user');
+		}
+
+		if ($this->request->get_var('gprs_amount', 'f') <= 0)
+		{
+			$this->error['gprs_amount'] = $this->language->get('error_gprs_amount');
+		}
+		
+		if ($this->request->get_var('gprs_price', 'f') <= 0)
+		{
+			$this->error['gprs_price'] = $this->language->get('error_gprs_price');
+		}
+
+		if ($this->request->get_var('live_month', 'i') <= 0)
+		{
+			$this->error['live_month'] = $this->language->get('error_live_month');
+		}
+
+		if (mb_strlen($this->request->get_var('gprs_memo', 's')) > 200)
+		{
+			$this->error['gprs_memo'] = $this->language->get('error_gprs_memo');
+		}
+
+		$repeat_pack = $this->model_gprs_pack->isRepeat($this->request->get_var('gprs_user', 'i'), $this->request->get_var('gprs_amount', 'f'));
+		if ($repeat_pack && $repeat_pack['pack_id'] != $this->request->get_var('pack_id', 'i'))
+		{
+			$this->error['gprs_amount'] = $this->language->get('error_gprs_repeat');
+		}
+
+		return !$this->error;
+	}
+
+}
+?>

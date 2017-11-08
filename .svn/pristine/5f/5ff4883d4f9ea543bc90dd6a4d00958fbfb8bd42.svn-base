@@ -1,0 +1,142 @@
+<?php
+class ControllerGprsUion extends Controller
+{
+	private $error = array();
+
+	/**
+	 * 联通流量卡查询
+	 */
+	public function detail()
+	{
+		$number = $this->request->get_var('number');
+		$params = array(
+			'cmd'          => 'mobile',
+			'flag'         => $this->request->get_var('flag', 'i', '', 2),
+			'operDate'     => $this->request->get_var('date', 's', '', date('Ym')),
+			'serialNumber' => $number,
+			'timestamp'    => time(),
+			'token'        => md5(UNICOM_KEY . date('dHYm')),
+		);
+		$result = json_decode(wcore_utils::curl(UNICOM_URL, $params, true), true);
+
+		if ($result['status'] == 0)
+		{
+			exit(json_encode($result));
+		}
+
+		if ($result['data']['state'] != 1)
+		{
+			$result = array(
+				'status' => 0,
+				'msg'    => $result['data']['state'] == 2 ? '该卡已停机' : '该卡暂未激活'
+			);
+			exit(json_encode($result));
+		}
+
+		$consumeDataMon = $result['data']['consumeDataMon'] ? $result['data']['consumeDataMon'] : 0;
+		$consumeDataAll = $result['data']['consumeDataAll'] ? $result['data']['consumeDataAll'] : 0;
+
+		$data = array(
+			'consumeDataMon' => modules_funs::gpgsFormat($consumeDataMon / 1048576),
+			'consumeDataAll' => modules_funs::gpgsFormat($consumeDataAll / 1048576),
+		);
+
+		$result = array(
+			'status' => 1,
+			'data'   => $data
+		);
+		exit(json_encode($result));
+	}
+
+	/**
+	 * 开启与停止流量卡
+	 */
+	public function stop()
+	{
+		$this->registry->language('gprs/card');
+		$opFlag  = $this->request->get_var('opFlag', 'i');
+		$card_sn = $this->request->get_var('number');
+		$params  = array(
+			'cmd'          => 'action',
+			'serialNumber' => $card_sn,
+			'timestamp'    => time(),
+			'token'        => md5(UNICOM_KEY . date('dHYm')),
+			'opFlag'       => $opFlag ? 0 : 1
+		);
+
+		$result = json_decode(wcore_utils::curl(UNICOM_URL, $params, true), true);
+
+		if ($result['status'] == 1)
+		{
+			$this->registry->model('gprs/card');
+			$data = array(
+				'card_id'     => $this->request->get_var('card_id', 'i'),
+				'unicom_stop' => $opFlag ? 0 : 1,
+			);
+			if ($data['unicom_stop'] == 1)
+			{
+				$data['time_stop'] = 'dbf|NOW()';
+			}
+
+			/**
+			 * 更新流量卡缓存中状态
+			 */
+			$iccid = $this->request->get_var('card_iccid');
+			if ($card = $this->mem_get("GPRS-CARD-{$iccid}"))
+			{
+				$card['unicom_stop'] = $data['unicom_stop'];
+				$card['time_stop']   = $data['unicom_stop'] == 1 ? date('Y-m-d H:i:s') : $card['time_stop'];
+				$this->mem_set("GPRS-CARD-{$iccid}", $card, 0);
+			}
+
+			return $this->model_gprs_card->update($data) ? 'ok' : $this->language->get('error_card');
+		}
+
+		return $this->language->get('error_card');
+	}
+
+	public function index()
+	{
+		$key  = '9c5987f81c84850b1165834d041bd33a';
+		$url  = 'http://122.143.21.162/api.php';
+		$data = array(
+			'cmd'          => $this->request->get_var('cmd', 's', '', 'mobile'),
+			'flag'         => '2',
+			'operDate'     => '201607',
+			'poolCode'     => '1049',
+			'serialNumber' => '14578600884',
+			'opFlag'       => 1,
+		);
+
+		$data['timestamp'] = time();
+		$data['token']     = md5($key . date('dHYm', $data['timestamp']));
+		$time_start        = $this->microtime_float();
+		$result            = json_decode(wcore_utils::curl($url, $data, true), true);
+
+		// Sleep for a while
+		//usleep(100);
+
+		$time_end = $this->microtime_float();
+		$time     = $time_end - $time_start;
+
+		echo "Did nothing in $time seconds\n";
+		if ($result['data']['state'] == 1)
+		{
+			$result['data']['consumeDataDay'] = empty($result['data']['consumeDataDay']) ? 0 : $result['data']['consumeDataDay'] / 1048576;
+			$result['data']['consumeDataMon'] = empty($result['data']['consumeDataMon']) ? 0 : $result['data']['consumeDataMon'] / 1048576;
+			$result['data']['consumeDataAll'] = $result['data']['consumeDataAll'] / 1048576;
+		}
+		wcore_utils::debug($result);
+	}
+
+	/**
+	 * Simple function to replicate PHP 5 behaviour
+	 */
+	function microtime_float()
+	{
+		list($usec, $sec) = explode(' ', microtime());
+
+		return ((float)$usec + (float)$sec);
+	}
+}
+?>

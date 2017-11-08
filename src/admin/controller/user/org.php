@@ -1,0 +1,345 @@
+<?php
+class ControllerUserOrg extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('user/org');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('user/org');
+
+		return $this->getList();
+	}
+
+	public function insert()
+	{
+		$this->registry->language('user/org');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('user/org');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$data = array(
+				'name'       => $this->request->get_var('name'),
+				'user_num'   => $this->request->get_var('user_num', 'i'),
+				'memo'       => $this->request->get_var('memo'),
+				'email'      => $this->request->get_var('email'),
+				'tel'        => $this->request->get_var('tel'),
+				'notify_url' => $this->request->get_var('notify_url')
+			);
+			$this->model_user_org->insert($data);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('user/org'));
+		}
+
+
+		return $this->getForm();
+	}
+
+	public function showList(){
+		$this->registry->model('user/org');
+		$page = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$limit = isset($this->request->get['limit']) ? (int)$this->request->get['limit'] : $this->config->get('config_admin_limit');
+		$data = array(
+			'start'       => ($page - 1) * $limit,
+			'limit'       => $limit,
+			'filter_name' => $this->request->get_var('name', 's')
+		);
+		$orgs = $this->model_user_org->getOrgList($data);
+		$total = $this->model_user_org->getOrgList($data,true);
+		$out = array('code' => 0,'count' => $total,'data'=> $orgs);
+		exit(json_encode($out));
+	}
+
+	public function update()
+	{
+		$this->registry->language('user/org');
+		$this->registry->model('user/org');
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$data = array(
+				'org_id'     => $this->request->get_var('org_id', 'i'),
+				'name'       => $this->request->get_var('name'),
+				'user_num'   => $this->request->get_var('user_num', 'i'),
+				'memo'       => $this->request->get_var('memo'),
+				'email'      => $this->request->get_var('email'),
+				'tel'        => $this->request->get_var('tel'),
+				'notify_url' => $this->request->get_var('notify_url')
+			);
+			$this->model_user_org->update($data);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('user/org'));
+		}
+
+		return $this->getForm();
+	}
+
+	public function delete()
+	{
+		$this->registry->language('user/org');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('user/org');
+
+		if (isset($this->request->post['selected']) && $this->validateDelete())
+		{
+			foreach ($this->request->post['selected'] as $org_id)
+			{
+				$this->model_user_org->deleteOrg($org_id);
+			}
+
+			$this->session->data['success'] = $this->language->get('text_delete');
+			$this->registry->redirect($this->url->link('user/org'));
+		}
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		/**
+		 * 导航栏组合
+		 */
+		$vrs                  = $this->language->data;
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('user/org'),
+			'separator' => ' :: '
+		);
+
+		$vrs['insert']        = $this->url->link('user/org/insert');
+		$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['success']       = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+
+		$page        = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data        = array(
+			'start'       => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'       => $this->config->get('config_admin_limit'),
+			'filter_name' => $this->request->get_var('name', 's')
+		);
+		$vrs['name'] = $data['filter_name'];
+		$vrs['orgs'] = $this->model_user_org->getOrgList($data);
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_user_org->getOrgList($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('user/org', "page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/user/org_list.tpl', $vrs);
+	}
+
+	private function getForm()
+	{
+		$vrs                     = $this->language->data;
+		$vrs['error_warning']    = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['error_name']       = isset($this->error['name']) ? $this->error['name'] : '';
+		$vrs['error_memo']       = isset($this->error['memo']) ? $this->error['memo'] : '';
+		$vrs['error_user_num']   = isset($this->error['user_num']) ? $this->error['user_num'] : '';
+		$vrs['error_email']      = isset($this->error['email']) ? $this->error['email'] : '';
+		$vrs['error_tel']        = isset($this->error['tel']) ? $this->error['tel'] : '';
+		$vrs['error_notify_url'] = isset($this->error['notify_url']) ? $this->error['notify_url'] : '';
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('user/org'),
+			'separator' => ' :: '
+		);
+
+		if (!isset($this->request->get['org_id']))
+		{
+			$vrs['action'] = $this->url->link('user/org/insert');
+		}
+		else
+		{
+			$vrs['action'] = $this->url->link('user/org/update', 'org_id=' . $this->request->get['org_id']);
+		}
+
+		$vrs['cancel'] = $this->url->link('user/org');
+
+		if (isset($this->request->get['org_id']))
+		{
+			$org_info = $this->model_user_org->get($this->request->get['org_id']);
+		}
+
+		if (isset($this->request->post['name']))
+		{
+			$vrs['name'] = $this->request->post['name'];
+		}
+		elseif (!empty($org_info))
+		{
+			$vrs['name'] = $org_info['name'];
+		}
+		else
+		{
+			$vrs['name'] = '';
+		}
+
+		if (isset($this->request->post['user_num']))
+		{
+			$vrs['user_num'] = $this->request->post['user_num'];
+		}
+		elseif (!empty($org_info))
+		{
+			$vrs['user_num'] = $org_info['user_num'];
+		}
+		else
+		{
+			$vrs['user_num'] = '';
+		}
+
+		if (isset($this->request->post['memo']))
+		{
+			$vrs['memo'] = $this->request->post['memo'];
+		}
+		elseif (!empty($org_info))
+		{
+			$vrs['memo'] = $org_info['memo'];
+		}
+		else
+		{
+			$vrs['memo'] = '';
+		}
+
+		if (isset($this->request->post['email']))
+		{
+			$vrs['email'] = strtolower(trim($this->request->post['email']));
+		}
+		elseif (!empty($org_info))
+		{
+			$vrs['email'] = $org_info['email'];
+		}
+		else
+		{
+			$vrs['email'] = '';
+		}
+
+		if (isset($this->request->post['tel']))
+		{
+			$vrs['tel'] = trim($this->request->post['tel']);
+		}
+		elseif (!empty($org_info))
+		{
+			$vrs['tel'] = $org_info['tel'];
+		}
+		else
+		{
+			$vrs['tel'] = '';
+		}
+
+		if (isset($this->request->post['notify_url']))
+		{
+			$vrs['notify_url'] = trim($this->request->post['notify_url']);
+		}
+		elseif (!empty($org_info))
+		{
+			$vrs['notify_url'] = $org_info['notify_url'];
+		}
+		else
+		{
+			$vrs['notify_url'] = '';
+		}
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/user/org_form.tpl', $vrs);
+	}
+
+	private function validateForm()
+	{
+		if (!$this->user->hasPermission('modify', 'user/org'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		if (!trim($this->request->post['name']) || (mb_strlen($this->request->post['name']) < 1) || (mb_strlen($this->request->post['name']) > 100))
+		{
+			$this->error['name'] = $this->language->get('error_name');
+		}
+
+		if (!isset($this->request->post['user_num']) || $this->request->post['user_num'] < 1)
+		{
+			$this->error['user_num'] = $this->language->get('error_user_num');
+		}
+
+		$org_info = $this->model_user_org->getOrgByName($this->request->post['name']);
+		if ($org_info && $org_info['org_id'] != $this->request->get_var('org_id'))
+		{
+			$this->error['warning'] = $this->language->get('error_exists');
+		}
+
+		if ($this->request->get_var('email') && !wcore_validate::email($this->request->get_var('email')))
+		{
+			$this->error['email'] = $this->language->get('error_email');
+		}
+
+		if ($this->request->get_var('tel') && !wcore_validate::mobile($this->request->get_var('tel')))
+		{
+			$this->error['tel'] = $this->language->get('error_tel');
+		}
+
+		if (!wcore_validate::url($this->request->get_var('notify_url')))
+		{
+			$this->error['notify_url'] = $this->language->get('error_notify_url');
+		}
+
+		return !$this->error;
+	}
+
+	private function validateDelete()
+	{
+		if (!$this->user->hasPermission('modify', 'user/org'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		foreach ($this->request->post['selected'] as $org_id)
+		{
+			if ($this->user->getOrgId() == $org_id)
+			{
+				$this->error['warning'] = $this->language->get('error_account');
+			}
+		}
+
+		return !$this->error;
+	}
+}
+?>

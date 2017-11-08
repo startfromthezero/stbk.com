@@ -1,0 +1,133 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?>
+		<a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($success) { ?>
+	<div class="success"><?php echo $success; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/payment.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/batch" class="button btn-red"><?php echo $button_reset; ?></a>
+				<?php if ($mpermission) { ?>
+				<a href="/gprs/batch/insert" class="button btn-green"><?php echo $button_insert; ?></a>
+				<?php } ?>
+			</div>
+		</div>
+		<div class="content">
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_batch_sn; ?></td>
+					<td><?php echo $text_batch_name; ?></td>
+					<td><?php echo $text_org_name; ?></td>
+					<td><?php echo $text_gprs_month; ?></td>
+					<td><?php echo $text_card_amount; ?></td>
+					<td><?php echo $text_batch_shipper; ?></td>
+					<td><?php echo $text_city; ?></td>
+					<td><?php echo $text_batch_memo; ?></td>
+					<td class="center"><?php echo $text_time_added; ?></td>
+					<td><?php echo $text_action; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td><input type="text" name="batch_sn" value="<?php echo $batch_sn; ?>" size="12" /></td>
+					<td></td>
+					<td>
+						<select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected=`"selected"<?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td></td>
+
+					<td></td>
+					<td></td>
+					<td></td>
+					<td>
+						<input style="width:40%;" type="text" name="added_date_start" value="<?php echo $added_date_start; ?>" id="added_date-start" size="5" />
+						- <input style="width:40%;" type="text" name="added_date_end" value="<?php echo $added_date_end; ?>" id="added_date-end" size="5" />
+					</td>
+					<td></td>
+				</tr>
+				<?php if ($items) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><?php echo $item['batch_sn']; ?></td>
+					<td><?php echo $item['batch_name']; ?></td>
+					<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : ''; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_month']); ?></td>
+					<td><?php echo $item['card_amount']; ?></td>
+					<td><?php echo $item['batch_shipper']; ?></td>
+					<td><?php echo isset($nation[$item['province_id']]) ? $nation[$item['province_id']] : '';echo isset($nation[$item['city_id']]) ? $nation[$item['city_id']] : '';echo isset($nation[$item['district_id']]) ? $nation[$item['district_id']] : ''; ?></td>
+					<td><?php echo strlen($item['batch_memo']) > 20 ? mb_substr($item['batch_memo'],0,10).'...' : $item['batch_memo']; ?></td>
+					<td class="center"><?php echo $item['time_added']; ?></td>
+					<td> [ <a href="/gprs/batch/update?batch_id=<?php echo $item['batch_id'],$action; ?>"><?php echo $button_edit; ?></a> ] </td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="11"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	function filter()
+	{
+		var url = '/gprs/batch?';
+		var org_id = $('select[name=\'org_id\']').val();
+		if (org_id != '*')
+		{
+			url += '&org_id=' + org_id;
+		}
+		var batch_sn = $('input[name=\'batch_sn\']').val();
+		if (batch_sn)
+		{
+			url += '&batch_sn=' + encodeURIComponent(batch_sn);
+		}
+		var added_date_start = $('input[name=\'added_date_start\']').val();
+		if (added_date_start)
+		{
+			url += '&added_date_start=' + encodeURIComponent(added_date_start);
+		}
+
+		var added_date_end = $('input[name=\'added_date_end\']').val();
+		if (added_date_end)
+		{
+			url += '&added_date_end=' + encodeURIComponent(added_date_end);
+		}
+		location = url;
+	}
+
+	$('#added_date-start').datepicker({
+		dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+		{
+			$('#added_date-end').datepicker('option', 'minDate', sltDate);
+		}
+	});
+
+	$('#added_date-end').datepicker({
+		dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+		{
+			$('#added_date-start').datepicker('option', 'maxDate', sltDate);
+		}
+	});
+</script>
+<?php echo $page_footer; ?>

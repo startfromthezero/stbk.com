@@ -1,0 +1,236 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?>
+	<div class="warning"><?php echo $error_warning; ?></div>
+	<?php } ?>
+	<div class="box" style="min-height:544px;">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_gprs_unicom_stat; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/unicom_stat" class="button btn-red"><?php echo $button_reset; ?></a>
+				<?php if ($mpermission) { ?>
+				<a onclick="$('form').submit();" class="button btn-yellow"><?php echo $button_export; ?></a>
+				<?php } ?>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<form action="<?php echo $export; ?>" method="post" enctype="multipart/form-data" id="form">
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_org_name; ?></td>
+					<td><?php echo $text_sell_num; ?></td>
+					<td><?php echo $text_not_act_num; ?></td>
+					<td><?php echo $text_not_act_rate; ?></td>
+					<td><?php echo $text_act_num; ?></td>
+					<td><?php echo $text_act_rate; ?></td>
+					<td><?php echo $text_unicom_total; ?></td>
+					<td><?php echo $text_unicom_month; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td width="15%">
+						<select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+				</tr>
+				<?php if (!empty($unicom_stat)) { ?>
+				<?php foreach ($unicom_stat as $v) { ?>
+				<tr>
+					<td><?php echo $orgs[$v['org_id']]; ?></td>
+					<td><?php echo $v['card_count']; ?></td>
+					<td><?php echo $v['nonactivated']; ?></td>
+					<td><?php echo round($v['nonactivated']/$v['card_count']*100,2).'%'; ?></td>
+					<td><?php echo $v['activated']; ?></td>
+					<td><?php echo round($v['activated']/$v['card_count']*100,2).'%'; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($v['unicom_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($v['month_count']); ?></td>
+				</tr>
+				<?php } ?>
+				<tr style="color:#00F;font-weight:bold;">
+					<td><?php echo $text_subtotal; ?></td>
+					<td><?php echo $subtotal['card_count']; ?></td>
+					<td><?php echo $subtotal['nonactivated']; ?></td>
+					<td><?php echo round($subtotal['nonactivated']/$subtotal['card_count']*100,2).'%'; ?></td>
+					<td><?php echo $subtotal['activated']; ?></td>
+					<td><?php echo round($subtotal['activated']/$subtotal['card_count']*100,2).'%'; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($subtotal['unicom_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($subtotal['month_count']); ?></td>
+				</tr>
+				<tr style="color:#F00;font-weight:bold;">
+					<td><?php echo $text_total; ?></td>
+					<td><?php echo $total['card_count']; ?></td>
+					<td><?php echo $total['nonactivated']; ?></td>
+					<td><?php echo round($total['nonactivated']/$total['card_count']*100,2).'%'; ?></td>
+					<td><?php echo $total['activated']; ?></td>
+					<td><?php echo round($total['activated']/$total['card_count']*100,2).'%'; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($total['unicom_count']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($total['month_count']); ?></td>
+				</tr>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="8"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			</form>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+	<div id="main" style="height:300px;"></div>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/unicom_stat?';
+
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'org_id=' + encodeURIComponent(org_id);
+	}
+	location = url;
+}
+
+require.config({
+	paths: {
+		echarts: 'http://echarts.baidu.com/build/dist'
+	}
+});
+
+// 使用
+require(
+		[
+			'echarts',
+			'echarts/chart/bar' // 使用柱状图就加载bar模块，按需加载
+		],
+		function (ec)
+		{
+			// 基于准备好的dom，初始化echarts图表
+			var myChart = ec.init(document.getElementById('main'));
+
+			var option = {
+				title     : {
+					text: '流量卡激活统计',
+				},
+				tooltip   : {
+					trigger    : 'axis',
+					axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+						type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+					},
+					formatter  : function (params)
+					{
+						return params[0].name + '<br/>'
+								+ params[0].seriesName + ' : ' + params[0].value + '<br/>'
+								+ '总卡数 : ' + (params[1].value + params[0].value);
+					}
+				},
+				legend    : {
+					selectedMode: false,
+					data        : ['未激活', '已激活']
+				},
+				toolbox   : {
+					show   : true,
+					feature: {
+						mark       : {show: true},
+						dataView   : {show: true, readOnly: false},
+						restore    : {show: true},
+						saveAsImage: {show: true}
+					}
+				},
+				calculable: true,
+				xAxis     : [
+					{
+						type: 'category',
+						data: <?php echo $org; ?>
+			}
+			],
+			yAxis     : [
+			{
+				type       : 'value',
+				boundaryGap: [0, 0.1]
+			}
+			],
+			series    : [
+			{
+				name          : '未激活',
+				type          : 'bar',
+				stack         : 'sum',
+				barCategoryGap: '50%',
+				itemStyle     : {
+				normal: {
+				color          : '#30C0FF',
+				barBorderColor : '#30C0FF',
+				barBorderWidth : 6,
+				barBorderRadius: 0
+			}
+			},
+				data          : <?php echo $nonactivated; ?>
+			},
+			{
+				name     : '已激活',
+				type     : 'bar',
+				stack    : 'sum',
+				itemStyle: {
+				normal: {
+				color          : '#FF00FF',
+				barBorderColor : '#FF00FF',
+				barBorderWidth : 6,
+				barBorderRadius: 0,
+				label          : {
+				show     : true,
+				position : 'top',
+				formatter: function (params)
+			{
+				for (var i = 0, l = option.xAxis[0].data.length; i < l; i++)
+			{
+				if (option.xAxis[0].data[i] == params.name)
+			{
+				return '未激活：' + option.series[0].data[i] + '\n已激活：' + params.value;
+			}
+			}
+			},
+				textStyle: {
+				color: 'tomato'
+			}
+			}
+			}
+			},
+				data     : <?php echo $activated; ?>
+			}
+			]
+			};
+			myChart.setOption(option);
+			});
+</script>
+<?php echo $page_footer; ?>

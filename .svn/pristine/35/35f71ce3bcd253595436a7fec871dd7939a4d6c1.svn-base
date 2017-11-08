@@ -1,0 +1,110 @@
+<?php echo $page_header; ?>
+<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+<a href="/app/main"><img src="/img/app/devices.jpg" /></a>
+<div id="resDiv"></div>
+<?php if (!empty($card_info)) { ?>
+<div class="buttons" style="margin:20px;">
+	<div class="center"><a class="button btn-green" href="<?php echo $pay_url; ?>"><?php echo $button_online_pay; ?></a></div>
+	<!--<div class="right"><button class="button btn-blue" id='scanCode'><?php echo $button_scan_pay; ?></button></div>-->
+</div>
+
+<div id="tabs" class="htabs">
+	<a class="selected" href="/app/gprs"><?php echo $text_my_card; ?></a>
+	<a href="/app/gprs?plist=1"><?php echo $text_card_pay; ?></a>
+</div><br />
+
+<div class="body">
+	<table class="list">
+		<tr><td><?php echo $text_card_iccid; ?></td><td><?php echo $card_info['card_iccid']; ?></td></tr>
+		<tr>
+			<td><?php echo $text_used_total; ?></td>
+			<td>
+				<?php echo modules_funs::gpgsFormat($card_info['used_total'] > $card_info['unicom_total']) ? $card_info['used_total'] : $card_info['unicom_total']); ?>
+			</td>
+		</tr>
+		<tr>
+			<td><?php echo $text_pay_total; ?></td>
+			<td><?php echo modules_funs::gpgsFormat($card_info['pay_total']); ?>M</td>
+		</tr>
+		<tr>
+			<td><?php echo $text_used_month; ?></td>
+			<td><?php echo modules_funs::gpgsFormat($card_info['used_month']); ?>M</td>
+		</tr>
+		<tr>
+			<td><?php echo $text_max_unused; ?></td>
+			<td><?php echo modules_funs::gpgsFormat($card_info['max_unused']); ?>M</td>
+		</tr>
+		<tr>
+			<td><?php echo $text_last_time_paid; ?></td>
+			<td><?php echo $card_info['time_paid']; ?></td>
+		</tr>
+		<tr>
+			<td><?php echo $text_time_expire; ?></td>
+			<td><?php echo $card_info['time_expire']; ?></td>
+		</tr>
+	</table>
+	<?php if ($card_info['is_normal'] == 0) { ?><div class="center error"><?php echo $text_card_stop; ?></div><?php } ?>
+</div>
+<?php } else { ?>
+<div class="noresult"><?php echo $error_no_card; ?></div>
+<?php } ?>
+<script type="text/javascript">
+<?php if($isweixin){ ?>
+wx.config({
+	debug    : false,
+	appId    : '<?php echo $jsapi['appid']; ?>',
+	timestamp: '<?php echo $jsapi['timestamp']; ?>',
+	nonceStr : '<?php echo $jsapi['noncestr']; ?>',
+	signature: '<?php echo $jsapi['signature']; ?>',
+	jsApiList: ['scanQRCode']
+});
+
+$("#scanCode").on('click',function(){
+	wx.scanQRCode({
+		needResult: 1,
+		success   : function (sres)
+		{
+			var follow_url = '<?php echo $follow_url; ?>';
+			if (String(sres.resultStr).indexOf(follow_url) == -1)
+			{
+				$('#resDiv').html('<span class="error center"><?php echo $error_unfit_wx; ?></span>');
+				return;
+			}
+
+			var code = String(sres.resultStr).substr(String(follow_url).length);
+			$.ajax({
+				url       : '/app/gprs/czk',
+				type      : 'post',
+				data      : {'code':code},
+				dataType  : 'text',
+				beforeSend: function ()
+				{
+					$(this).prop('disabled', true);
+					$('#resDiv').html('<span id="loading" class="wait center"><?php echo $text_pay_loading; ?><img src="/img/app/loading.gif" /></span>');
+				},
+				complete  : function ()
+				{
+					$('#loading').remove();
+					$(this).prop('disabled', false);
+				},
+				success   : function (html)
+				{
+					if (html == 'ok')
+					{
+						$('#resDiv').html('<span class="success center"><?php echo $text_pay_success; ?></span>');
+						setTimeout(function(){
+							location.href = '/app/gprs';
+						},2000);
+					}
+					else
+					{
+						$('#resDiv').html('<span class="error center">' + html + '</span>');
+					}
+				}
+			});
+		}
+	});
+});
+<?php } ?>
+</script>
+<?php echo $page_footer; ?>

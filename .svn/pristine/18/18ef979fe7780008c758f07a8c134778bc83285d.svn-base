@@ -1,0 +1,264 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_gprs_halt; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/halt" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_card_iccid; ?></td>
+					<td><?php echo $text_user_firstname; ?></td>
+					<td>
+						<?php if ($sort == 'used_month') { ?>
+						<a href="<?php echo $sort_used_month; ?>"><?php echo $text_used_month; ?>
+							<i class="<?php echo strtolower($order); ?>"></i>
+						</a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_used_month; ?>"><?php echo $text_used_month; ?>
+							<i class="harrow"></i>
+						</a>
+						<?php } ?>
+					</td>
+					<td>
+						<?php if ($sort == 'used_total') { ?>
+						<a href="<?php echo $sort_used_total; ?>"><?php echo $text_used_total; ?>
+							<i class="<?php echo strtolower($order); ?>"></i>
+						</a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_used_total; ?>"><?php echo $text_used_total; ?>
+							<i class="harrow"></i>
+						</a>
+						<?php } ?>
+					</td>
+					<td>
+						<?php if ($sort == 'max_unused') { ?>
+						<a href="<?php echo $sort_max_unused; ?>"><?php echo $text_max_unused; ?>
+							<i class="<?php echo strtolower($order); ?>"></i>
+						</a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_max_unused; ?>"><?php echo $text_max_unused; ?>
+							<i class="harrow"></i>
+						</a>
+						<?php } ?>
+					</td>
+					<td>
+						<?php if ($sort == 'time_last') { ?>
+						<a href="<?php echo $sort_time_last; ?>"><?php echo $text_time_last; ?>
+							<i class="<?php echo strtolower($order); ?>"></i>
+						</a>
+						<?php } else { ?>
+						<a href="<?php echo $sort_time_last; ?>"><?php echo $text_time_last; ?>
+							<i class="harrow"></i>
+						</a>
+						<?php } ?>
+					</td>
+					<td><?php echo $text_time_expire; ?></td>
+					<td><?php echo $text_action; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td width="12%"><input type="text" name="card_iccid" value="<?php echo $card_iccid ? $card_iccid : ''; ?>" size="16" /></td>
+					<td><select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td>
+						<select name="time_expire">
+							<option value="*"></option>
+							<?php foreach ($arr_date_status as $k =>$v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k == $time_expire) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<!--<td></td>-->
+				</tr>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td>
+						<a href="/gprs/paylog/pay?card_id=<?php echo $item['card_id']; ?>"><?php echo $item['card_iccid']; ?></a>
+					</td>
+					<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : ''; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['used_month']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['used_total']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['max_unused']); ?></td>
+					<td><?php echo $item['time_last']; ?></td>
+					<td><?php echo $item['time_expire']; ?><?php if($item['time_expire'] <= $item['today']) { ?><span class="required"><?php echo $text_time_out; ?></span><?php } ?></td>
+					<td> [ <a href="javascript:void()" onclick="cardDetails(this)"
+							  ciccid="<?php echo $item['card_iccid']; ?>"
+							  csn="<?php echo $item['card_sn']; ?>"
+							  cname="<?php echo $item['card_name']; ?>"
+							  oname="<?php echo $item['owner_name']; ?>"
+							  ocdi="<?php echo $item['owner_cdi']; ?>"
+							  ogender="<?php echo $item['owner_gender']==0 ? '保密' : ($item['owner_gender']==1 ? '男' : '女'); ?>"
+							  atime="<?php echo $item['time_added']; ?>"
+							  ptime="<?php echo $item['time_paid']; ?>"
+							  stime="<?php echo $item['time_stop']; ?>"
+							  ltime="<?php echo $item['time_last']; ?>" ><?php echo $button_see_details; ?>
+						</a> ]
+					</td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="9"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+function enterPress(){
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/halt?';
+
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'orgId=' + encodeURIComponent(org_id);
+	}
+
+	var card_iccid = $('input[name=\'card_iccid\']').val();
+	if (card_iccid)
+	{
+		url += '&iccid=' + encodeURIComponent(card_iccid);
+	}
+
+	var time_expire = $('select[name=\'time_expire\']').val();
+	if (time_expire != '*')
+	{
+		url += '&expire=' + encodeURIComponent(time_expire);
+	}
+	location = url;
+}
+
+function cardDetails(obj)
+{
+	var html='<table class="list" id="cardDetail">';
+
+	var csn = $(obj).attr('csn');
+	if (csn != '')
+	{
+		html += '<tr><td><?php echo $text_card_sn; ?></td><td>' + csn + '</td></tr>';
+	}
+
+	var cname = $(obj).attr('cname');
+	if (cname != '')
+	{
+		html += '<tr><td><?php echo $text_card_name; ?></td><td>' + cname + '</td></tr>';
+	}
+
+	var oname = $(obj).attr('oname');
+	if (oname != '')
+	{
+		html += '<tr><td><?php echo $text_owner_name; ?></td><td>' + oname + '</td></tr>';
+	}
+
+	var ocdi = $(obj).attr('ocdi');
+	if (ocdi != '')
+	{
+		html += '<tr><td><?php echo $text_owner_cdi; ?></td><td>' + ocdi + '</td></tr>';
+	}
+
+	var ogender = $(obj).attr('ogender');
+	if (ogender != '')
+	{
+		html += '<tr><td><?php echo $text_owner_gender; ?></td><td>' + ogender + '</td></tr>';
+	}
+
+	var atime = $(obj).attr('atime');
+	if (atime != '')
+	{
+		html += '<tr><td><?php echo $text_time_active; ?></td><td>' + atime + '</td></tr>';
+	}
+
+	var ptime = $(obj).attr('ptime');
+	if (ptime != '')
+	{
+		html += '<tr><td><?php echo $text_time_paid; ?></td><td>'+ ptime+'</td></tr>';
+	}
+
+	var stime = $(obj).attr('stime');
+	if (stime != '')
+	{
+		html += '<tr><td><?php echo $text_time_stop; ?></td><td>' + stime + '</td></tr>';
+	}
+
+	var ltime = $(obj).attr('ltime');
+	if (ltime != '')
+	{
+		html += '<tr><td><?php echo $text_time_last; ?>：</td><td>' + ltime + '</td></tr>';
+	}
+
+	$.ajax({
+		url       : '/gprs/uion/detail?number=' + csn,
+		dataType  : 'json',
+		beforeSend: function ()
+		{
+			$(obj).hide();
+			$(obj).after('<span id="loading" class="wait">&nbsp;<img src="/view/image/loading.gif" /></span>');
+		},
+		complete  : function ()
+		{
+			$('#loading').remove();
+			$(obj).show();
+		},
+		success   : function (res)
+		{
+			if (res.status == 1)
+			{
+				uion = '<tr><td>联通真实当月使用流量：</td><td>' + res.data.consumeDataMon + '</td></tr>';
+				uion += '<tr><td>联通真实累计使用流量：</td><td>' + res.data.consumeDataAll + '</td></tr>';
+				$('#cardDetail').append(uion);
+			}
+			else
+			{
+				uion = '<tr><td>联通实时状态：</td><td>' + res.msg + '</td></tr>';
+				$('#cardDetail').append(uion);
+			}
+		}
+	});
+
+	html+='</table>';
+
+	$(obj).parent().parent().css({'background':'#FFFFA0', 'color':'red'});
+
+	$.fn.tboxy({
+		title    : '<?php echo $text_more_detail; ?> - ' + $(obj).attr('ciccid'), width: '500px', value: html,
+		closeExec: function () {$(obj).parent().parent().css({'background': '', 'color': ''})}
+	});
+}
+
+</script>
+<?php echo $page_footer; ?>

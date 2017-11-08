@@ -1,0 +1,14 @@
+{
+    "cmsName": "风之迷者管理后台",
+    "version": "v1.0.1",
+    "author": "请叫我通少",
+    "homePage": "common/home",
+    "server": "windows",
+    "dataBase": "8.00.2039",
+    "maxUpload": "2M",
+    "userRights": "总管理员",
+    "description": "不要让任何事情成为你不去学习的理由.",
+    "powerby": "copyright @2017 请叫我通少",
+    "record": "粤ICP备14040xxx号-1",
+    "keywords": "layui，通少，cms，模版"
+}

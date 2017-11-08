@@ -1,0 +1,46 @@
+<?php echo $page_header; ?>
+<a href="/app/main/info"><img src="/img/app/gprs-head.jpg" /></a>
+<div id="resDiv"></div>
+<?php if (!empty($card_info)) { ?>
+<div class="buttons" style="margin:20px;">
+	<div class="center"><a class="button btn-green" href="/app/main/topup"><?php echo $button_online_pay; ?></a></div>
+</div>
+
+<div id="tabs" class="htabs">
+	<a class="selected" href="/app/main/info"><?php echo $text_my_card; ?></a>
+	<a href="/app/main/paylog"><?php echo $text_card_paylog; ?></a>
+</div><br />
+
+<div class="body">
+	<table class="list">
+		<tr><td><?php echo $text_card_iccid; ?></td><td><?php echo $card_info['card_iccid']; ?></td></tr>
+		<tr><td><?php echo $text_used_total; ?></td><td><?php echo modules_funs::gpgsFormat($card_info['used_total']); ?></td></tr>
+		<tr>
+			<td><?php echo $text_pay_total; ?></td>
+			<td><?php echo modules_funs::gpgsFormat($card_info['pay_total']); ?></td>
+		</tr>
+		<tr>
+			<td><?php echo $text_used_month; ?></td>
+			<td><?php echo modules_funs::gpgsFormat($card_info['used_month']); ?></td>
+		</tr>
+		<tr>
+			<td><?php echo $text_max_unused; ?></td>
+			<td><?php echo modules_funs::gpgsFormat($card_info['max_unused']); ?></td>
+		</tr>
+		<tr>
+			<td><?php echo $text_last_time_paid; ?></td>
+			<td><?php echo $card_info['time_paid']; ?></td>
+		</tr>
+		<tr>
+			<td><?php echo $text_time_expire; ?></td>
+			<td><?php echo $card_info['time_expire']; ?></td>
+		</tr>
+	</table>
+</div>
+<?php } else { ?>
+<div class="noresult"><?php echo $error_no_card; ?></div>
+<?php } ?>
+<script type="text/javascript">
+
+</script>
+<?php echo $page_footer; ?>

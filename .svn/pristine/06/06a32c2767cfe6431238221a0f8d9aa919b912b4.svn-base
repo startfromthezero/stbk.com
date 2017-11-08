@@ -1,0 +1,164 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a
+				href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?>
+	<div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a href="javascript:showDetails()" class="button btn-pink"><?php echo $button_chart; ?></a>
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/stats" class="button btn-red"><?php echo $button_reset; ?></a>
+				<?php if ($mpermission) { ?>
+				<a onclick="$('form').submit();" class="button btn-yellow"><?php echo $button_export; ?></a>
+				<?php } ?>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<form action="<?php echo $export; ?>" method="post" enctype="multipart/form-data" id="form" onkeypress="if(event.keyCode==13||event.which==13){return false;}">
+				<table class="list">
+					<thead>
+					<tr>
+						<td><?php echo $text_card_iccid; ?></td>
+						<td>
+							<?php if ($sort == 'org_id') { ?>
+							<a href="<?php echo $sort_org_id; ?>"
+							   class="<?php echo strtolower($order); ?>"><?php echo $text_user_firstname; ?></a>
+							<?php } else { ?>
+							<a href="<?php echo $sort_org_id; ?>"><?php echo $text_user_firstname; ?></a>
+							<?php } ?>
+						</td>
+						<td>
+							<?php if ($sort == 'how_month') { ?>
+							<a href="<?php echo $sort_how_month; ?>"
+							   class="<?php echo strtolower($order); ?>"><?php echo $text_how_month; ?></a>
+							<?php } else { ?>
+							<a href="<?php echo $sort_how_month; ?>"><?php echo $text_how_month; ?></a>
+							<?php } ?>
+						</td>
+						<td>
+							<?php if ($sort == 'month_used') { ?>
+							<a href="<?php echo $sort_month_used; ?>"
+							   class="<?php echo strtolower($order); ?>"><?php echo $text_month_used; ?></a>
+							<?php } else { ?>
+							<a href="<?php echo $sort_month_used; ?>"><?php echo $text_month_used; ?></a>
+							<?php } ?>
+						</td>
+						<td>
+							<?php if ($sort == 'month_over') { ?>
+							<a href="<?php echo $sort_month_over; ?>"
+							   class="<?php echo strtolower($order); ?>"><?php echo $text_month_over; ?></a>
+							<?php } else { ?>
+							<a href="<?php echo $sort_month_over; ?>"><?php echo $text_month_over; ?></a>
+							<?php } ?>
+						</td>
+					</tr>
+					</thead>
+					<tbody>
+					<tr class="filter center">
+						<td><input type="text" name="card_iccid" value="<?php echo !empty($card_iccid) ? $card_iccid : ''; ?>" size="3" /></td>
+						<td>
+							<select name="org_id">
+								<option value="*"></option>
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($k == $org_id) { ?>selected="selected" <?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td>
+							<select name="mdate">
+								<option value="*"></option>
+								<?php foreach ($mdates as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($mdate !== '' && $k == $mdate) { ?> selected="selected"<?php } ?>><?php echo $v['how_month']; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<?php if (!empty($items)) { ?>
+					<?php foreach ($items as $item) { ?>
+					<tr>
+						<td><?php echo $item['card_iccid']; ?></td>
+						<td><?php echo $orgs[$item['org_id']]; ?></td>
+						<td><?php echo $item['how_month']; ?></td>
+						<td><?php echo modules_funs::gpgsFormat($item['month_used']); ?></td>
+						<td><?php echo modules_funs::gpgsFormat($item['month_over']); ?></td>
+					</tr>
+					<?php } ?>
+					<tr>
+						<td><span style="color:blue"><?php echo $text_subtotal; ?></span></td>
+						<td></td>
+						<td></td>
+						<td><span style="color:blue"><?php echo modules_funs::gpgsFormat($subtotal['mu']); ?></span></td>
+						<td><span style="color:blue"><?php echo modules_funs::gpgsFormat($subtotal['mo']); ?></span></td>
+					</tr>
+					<?php if(isset($num['mu']) && isset($num['mo'])) { ?>
+					<tr>
+						<td><span class="required"><?php echo $text_total; ?></span></td>
+						<td></td>
+						<td></td>
+						<td><span class="required"><?php echo modules_funs::gpgsFormat($num['mu']); ?></span></td>
+						<td><span class="required"><?php echo modules_funs::gpgsFormat($num['mo']); ?></span></td>
+					</tr>
+					<?php } ?>
+					<?php } else { ?>
+					<tr>
+						<td class="center" colspan="7"><?php echo $text_no_results; ?></td>
+					</tr>
+					<?php } ?>
+					</tbody>
+				</table>
+			</form>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+
+function filter()
+{
+	var url = '/gprs/stats?';
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += '&org_id=' + org_id;
+	}
+
+	var card_iccid = $('input[name=\'card_iccid\']').val();
+	if (card_iccid)
+	{
+		url += '&card_iccid=' + encodeURIComponent(card_iccid);
+	}
+
+	var mdate = $('select[name=\'mdate\']').val();
+	if (mdate != '*')
+	{
+		url += '&mdate=' + mdate;
+	}
+
+	location = url;
+}
+
+function showDetails()
+{
+	var $url = '/gprs/stats/chart';
+	$.fn.tboxy({title: '月流量统计图表', width: '900px', value: {type: 'url', val: $url}});
+}
+</script><?php echo $page_footer; ?>

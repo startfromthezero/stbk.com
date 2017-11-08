@@ -1,0 +1,30 @@
+-- cyagps
+DROP TABLE `cc_zone`,`cc_country`,`cc_currency`,`cc_extension`,`cc_gprs_alert`,`cc_gprs_batch`,`cc_gprs_card`,`cc_gprs_czk`,`cc_gprs_log`,
+`cc_gprs_pack`,`cc_gprs_pay`,`cc_gprs_stats`,`cc_gprs_yck`,`cc_nation`,`cc_org`,`cc_user`,`cc_user_group`,
+`cc_customer_group`,`cc_customer_group_description`,`cc_customer_ip`,`cc_customer_ip_blacklist`;
+
+DELETE FROM `cc_setting` WHERE `group` != 'config';
+ALTER TABLE `cc_setting` DROP COLUMN `setting_id`;
+ALTER TABLE `cc_setting` ADD COLUMN `setting_id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY(`setting_id`);
+
+
+-- GPRS
+DELETE FROM `cc_setting` WHERE `group` != 'config' AND `group` != 'wxpay';
+ALTER TABLE `cc_setting` DROP COLUMN `setting_id`;
+ALTER TABLE `cc_setting` ADD COLUMN `setting_id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY(`setting_id`);
+
+ALTER TABLE `cc_gprs_alert` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_batch` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_card` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_pack` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_pay` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_ota` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_ota_device` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_czk` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+
+ALTER TABLE `cc_gprs_card` DROP COLUMN `device_id`;
+ALTER TABLE `cc_gprs_log` DROP COLUMN `device_id`;
+ALTER TABLE `cc_gprs_pay` DROP COLUMN `device_id`;
+ALTER TABLE `cc_gprs_pay` DROP COLUMN `customer_id`;
+ALTER TABLE `cc_gprs_czk` DROP COLUMN `device_id`;
+DROP TABLE `cc_gprs_yck`;

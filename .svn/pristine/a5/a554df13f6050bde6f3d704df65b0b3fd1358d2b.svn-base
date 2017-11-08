@@ -1,0 +1,514 @@
+<?php
+class ModelAppGprs extends Model
+{
+	/**
+	 * @var string 此库要操作的表
+	 */
+	private $_opt = 'cc_gprs_card';
+
+	/**
+	 * 通过流量卡编号获取流量卡数据
+	 *
+	 * @param int $card_id
+	 * @return bool|int
+	 */
+	public function get($card_id)
+	{
+		/**
+		 * 如果缓存里有该流量卡数据，则优先使用缓存
+		 */
+		$result = $this->sdb()->fetch_row("SELECT * FROM {$this->_opt} WHERE card_id = '{$card_id}'");
+		if ($result && $data = $this->mem_get("GPRS-CARD-{$result['card_iccid']}"))
+		{
+			/**
+			 * unicom_stop字段添加，需更新到缓存
+			 */
+			if (!isset($data['unicom_stop']))
+			{
+				$data['unicom_stop'] = $result['unicom_stop'];
+			}
+
+			return $data;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * 通过ICCID获取流量卡数据
+	 *
+	 * @param int $iccid
+	 * @return mixed
+	 */
+	public function getByIccid($iccid)
+	{
+		/**
+		 * 如果缓存里有该流量卡数据，则优先使用缓存
+		 */
+		$data = $this->mem_get("GPRS-CARD-{$iccid}");
+		if (!$data)
+		{
+			return $this->sdb()->fetch_row("SELECT * FROM {$this->_opt} WHERE card_iccid = '{$iccid}'");
+		}
+
+		/**
+		 * unicom_stop字段添加，需更新到缓存
+		 */
+		if (!isset($data['unicom_stop']))
+		{
+			$result              = $this->sdb()->fetch_row("SELECT unicom_stop FROM {$this->_opt} WHERE card_iccid = '{$iccid}'");
+			$data['unicom_stop'] = $result['unicom_stop'];
+		}
+
+		return $data;
+	}
+
+	/**
+	 * 更新数据,在缓存中更新
+	 *
+	 * @param array $data
+	 * @return bool|int
+	 */
+	public function update($data = array())
+	{
+		/**
+		 * 在缓存中更新流量卡数据，另有定时任务从缓存中读取数据更新到数据库中
+		 * 如更新缓存失败，则直接更新到数据库
+		 */
+		if (!$this->mem_set("GPRS-CARD-{$data['card_iccid']}", $data, 0))
+		{
+			return $this->mdb()->update($this->_opt, $data, "card_id = '{$data['card_id']}'");
+		}
+
+		$this->mem->push($this->mem_type_res, 'GPRS-QUEUE', $data['card_iccid']);    //将流量卡ICCID加入到队列中
+		return true;
+	}
+
+	/**
+	 * 记录下流量卡每月流量使用情况，使用消息队列
+	 *
+	 * @param array $data
+	 * @return bool|int
+	 */
+	public function saveMonthData($data = array())
+	{
+		$how_month  = date('Ym');
+		$month_over = $data['used_month'] - $data['gprs_month'];
+		$month_over = $month_over > 0 ? $month_over : 0;
+		$sql        = "INSERT INTO cc_gprs_stats SET card_id = '{$data['card_id']}', how_month = '{$how_month}',
+		month_used = '{$data['used_month']}', month_over = '{$month_over}', time_modify = NOW()
+		ON DUPLICATE KEY UPDATE month_used = '{$data['used_month']}', month_over = '{$month_over}', time_modify = NOW()";
+
+		if (!$this->mem->push($this->mem_type_sql, 'SQL-QUEUE', $sql))
+		{
+			$mdb = $this->mdb();
+			$mdb->query($sql);
+
+			return $mdb->affected_rows();
+		}
+
+		return true;
+	}
+
+	/**
+	 * 获取流量卡已付款的充值记录
+	 *
+	 * @param array $data       查询与分页
+	 * @param bool  $just_total 仅获取数量
+	 * @return array mixed      充值的列表记录
+	 */
+	public function getPayList($data = array(), $just_total = false)
+	{
+		$sql = "SELECT * FROM cc_gprs_pay WHERE is_paid = 1";
+
+		//filter_date_start
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND card_id = '{$data['filter_card_id']}'";
+		}
+
+		//判断是否仅获取条数
+		if ($just_total)
+		{
+			return $this->sdb()->fetch_one(str_replace(' * ', ' COUNT(*) ', $sql));
+		}
+
+		//根据分页情况获取数据
+		$sql .= ' ORDER BY time_paid DESC';
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 获取流量卡的充值记录
+	 *
+	 * @param array $data       查询与分页
+	 * @param bool  $just_total 仅获取数量
+	 * @return array mixed      充值的列表记录
+	 */
+	public function getPayAll($data = array(), $just_total = false)
+	{
+		$sql = "SELECT * FROM cc_gprs_pay WHERE pay_id > 0";
+
+		//filter_date_start
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND card_id = '{$data['filter_card_id']}'";
+		}
+
+		/* 是否支付 */
+		if (!empty($data['filter_is_paid']) && $data['filter_is_paid'])
+		{
+			$sql .= " AND is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		//判断是否仅获取条数
+		if ($just_total)
+		{
+			return $this->sdb()->fetch_one(str_replace(' * ', ' COUNT(*) ', $sql));
+		}
+
+		//根据分页情况获取数据
+		$sql .= ' ORDER BY time_paid DESC';
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/*
+	 * 获取所属机构流量套餐
+	 *
+	 * @param int $user_id
+	 * @return array mixed	流量套餐记录
+	 */
+	public function getPackList($org_id)
+	{
+		$sql = "SELECT * FROM cc_gprs_pack WHERE org_id = '{$org_id}' AND gprs_status = 1 ORDER BY gprs_amount";
+		$res = $this->sdb()->fetch_all($sql);
+		if (empty($res))
+		{
+			$res = $this->sdb()->fetch_all("SELECT * FROM cc_gprs_pack WHERE org_id = 0 AND gprs_status = 1 ORDER BY gprs_amount");
+		}
+
+		return $res;
+	}
+
+	/*
+	 * 获取充值套餐信息
+	 *
+	 * @param int $pack_id
+	 * @param int $org_id
+	 * @return array mixed	套餐信息
+	 */
+	public function getPack($pack_id, $org_id)
+	{
+		$sql = "SELECT * FROM cc_gprs_pack WHERE pack_id = '{$pack_id}' AND (org_id = '{$org_id}' OR org_id = 0) AND gprs_status = 1";
+
+		return $this->sdb()->fetch_row($sql);
+	}
+
+	/**
+	 * 获取流量卡预警信息
+	 *
+	 * @param int $org_id
+	 * @return mixed
+	 */
+	public function getAlertInfo($org_id)
+	{
+		$mkey   = 'GPRS-ALERT';
+		$result = $this->mem_get($mkey);
+		if (empty($result))
+		{
+			$result = $this->sdb()->fetch_all('SELECT * FROM cc_gprs_alert');
+			$this->mem_set($mkey, wcore_utils::hash_array($result, 'org_id'));
+		}
+
+		return isset($result[$org_id]) ? $result[$org_id] : $result[0];
+	}
+
+	/**
+	 * 获取流量充值记录
+	 *
+	 * @param int $pay_id
+	 * @return bool|int
+	 */
+	public function getPayInfo($pay_id)
+	{
+		$sql = "SELECT * FROM cc_gprs_pay WHERE pay_id = '{$pay_id}'";
+
+		return $this->sdb()->fetch_row($sql);
+	}
+
+	/**
+	 * 流量充值记录保存
+	 *
+	 * @param array $data
+	 * @return bool|int
+	 */
+	public function insertPay($data)
+	{
+		$data['time_added'] = 'dbf|NOW()';
+
+		return $this->mdb()->insert('cc_gprs_pay', $data);
+	}
+
+	/**
+	 * 流量日志保存,使用消息队列
+	 *
+	 * @param array $data
+	 * @return bool|int
+	 */
+	public function insertLog($data)
+	{
+		$data['time_added'] = date('Y-m-d H:i:s');
+		$sql                = 'INSERT INTO cc_gprs_log ' . wcore_db::make_sql($data, 'i');
+
+		/**
+		 * 将新增流量日志sql语句加入到消息队列中，如失败直接插入数据库
+		 */
+		if (!$this->mem->push($this->mem_type_sql, 'SQL-QUEUE', $sql))
+		{
+			return $this->mdb()->insert('cc_gprs_log', $data);
+		}
+
+		return true;
+	}
+
+	/**
+	 * 获取充值卡信息
+	 *
+	 * @param int $zck_code
+	 * @return mixed
+	 */
+	public function getCzkInfo($zck_code)
+	{
+		$sql = "SELECT * FROM cc_gprs_czk WHERE zck_code = '{$zck_code}'";
+
+		return $this->sdb()->fetch_row($sql);
+	}
+
+	/**
+	 * 充值卡扫描充值流量，需同时操作表：cc_gprs_pay，cc_gprs_czk，cc_gprs_card，添加事务回滚
+	 *
+	 * @param $czk_info
+	 * @param $card_info
+	 * @return bool|int
+	 */
+	public function qrcode_pay($czk_info, $card_info)
+	{
+		$mdb = $this->mdb();
+		$mdb->query('SET AUTOCOMMIT = 0');
+		$mdb->query('BEGIN');
+
+		/*
+		 * 充值支付记录保存
+	     */
+		$data = array(
+			'card_id'     => $card_info['card_id'],
+			'org_id'      => $card_info['org_id'],
+			'gprs_amount' => $czk_info['zck_gprs'],
+			'gprs_price'  => $czk_info['zck_value'],
+			'pay_method'  => 3,
+			'transfer_id' => $czk_info['zck_code'],
+			'is_paid'     => 1,
+			'time_paid'   => 'dbf|NOW()',
+			'time_added'  => 'dbf|NOW()',
+		);
+		$mdb->query('INSERT INTO cc_gprs_pay ' . $mdb->make_sql($data));
+		if (!$mdb->insert_id())
+		{
+			$mdb->query('ROLLBACK');
+
+			return false;
+		}
+
+		/*
+		 * 充值卡已充值信息修改
+		 */
+		$czk_data = array(
+			'card_id'   => $card_info['card_id'],
+			'time_used' => 'dbf|NOW()',
+		);
+		$mdb->query("UPDATE cc_gprs_czk SET {$mdb->make_sql($czk_data, 'u')} WHERE zck_code = '{$czk_info['zck_code']}'");
+		if (!$mdb->affected_rows())
+		{
+			$mdb->query('ROLLBACK');
+
+			return false;
+		}
+
+		/*
+		 * 流量卡的充值流量增加
+		 * 可使用充值流量计算规则：
+		 * 计算后的最大可使用流量小于0时，则不更新，为0
+		 * 计算前的最大可使用流量大于0时，则加上充值的套餐流量
+		 * 计算前的最大可使用流量小于0时，则等于计算后的最大可使用流量
+		 */
+		$card_data               = $card_info;
+		$card_data['pay_total']  = $card_info['pay_total'] + $czk_info['zck_gprs'];
+		$card_data['max_unused'] = $card_info['max_unused'] + $czk_info['zck_gprs'];
+		$card_data['pay_unused'] = $card_data['max_unused'] < 0 ? 0 : ($card_info['max_unused'] > 0 ? ($card_info['pay_unused'] + $czk_info['zck_gprs']) : $card_data['max_unused']);
+
+		$card_data['time_paid']  = date('Y-m-d H:i:s');
+
+		/**
+		 * 充值后过期时间延长
+		 */
+		if (strtotime($card_info['time_expire']) <= time())
+		{
+			$card_data['time_expire'] = date('Y-m-d H:i:s', strtotime("+ {$czk_info['live_month']}month"));
+		}
+		else
+		{
+			$card_data['time_expire'] = date('Y-m-d H:i:s', strtotime("+ {$czk_info['live_month']}month", strtotime($card_data['time_expire'])));
+		}
+
+		/**
+		 * 先在缓存中更新数据，如缓存更新失败则直接更新到数据库
+		 */
+		$result = $this->mem_set("GPRS-CARD-{$card_data['card_iccid']}", $card_data, 0);
+		if (!$result)
+		{
+			$mdb->query("UPDATE cc_gprs_card SET {$mdb->make_sql($card_data, 'u')} WHERE card_id = '{$card_info['card_id']}'");
+			$result = $mdb->affected_rows();
+		}
+		else
+		{
+			$this->mem->push($this->mem_type_res, 'GPRS-QUEUE', $card_info['card_iccid']);    //将流量卡ICCID加入到队列中
+		}
+
+		/**
+		 * 缓存或数据库都更新失败，事务回滚
+		 */
+		if (!$result)
+		{
+			$mdb->query('ROLLBACK');
+
+			return false;
+		}
+
+		$mdb->query('COMMIT');
+
+		return true;
+	}
+
+	/**
+	 * 微信支付成功后充值流量，需同时操作表：cc_gprs_pay，cc_gprs_card，添加事务回滚
+	 *
+	 * @param $card_info
+	 * @param $pay_info
+	 * @return bool|int
+	 */
+	public function online_pay($card_info, $pay_info, $live_month)
+	{
+		$mdb = $this->mdb();
+		$mdb->query('SET AUTOCOMMIT = 0');
+		$mdb->query('BEGIN');
+
+		/*
+		 * 订单支付成功，状态修改
+		 */
+		$pay_data = array(
+			'transfer_id' => $pay_info['transfer_id'],
+			'is_paid'     => 1,
+			'time_paid'   => $pay_info['time_paid'],
+		);
+		$mdb->query("UPDATE cc_gprs_pay SET {$mdb->make_sql($pay_data, 'u')} WHERE pay_id = '{$pay_info['pay_id']}'");
+		if (!$mdb->affected_rows())
+		{
+			$mdb->query('ROLLBACK');
+
+			return false;
+		}
+
+		/*
+		 * 流量卡的充值流量增加
+		 * 可使用充值流量计算规则：
+		 * 计算后的最大可使用流量小于0时，则不更新，为0
+		 * 计算前的最大可使用流量大于0时，则加上充值的套餐流量
+		 * 计算前的最大可使用流量小于0时，则等于计算后的最大可使用流量
+		 */
+		$card_data               = $card_info;
+		$card_data['pay_total']  = $card_info['pay_total'] + $pay_info['gprs_amount'];
+		$card_data['max_unused'] = $card_info['max_unused'] + $pay_info['gprs_amount'];
+		$card_data['pay_unused'] = $card_data['max_unused'] < 0 ? 0 : ($card_info['max_unused'] > 0 ? ($card_info['pay_unused'] + $pay_info['gprs_amount']) : $card_data['max_unused']);
+		$card_data['time_paid']  = $pay_data['time_paid'];
+
+		/**
+		 * 充值后过期时间延长
+		 */
+		if (strtotime($card_info['time_expire']) <= time())
+		{
+			$card_data['time_expire'] = date('Y-m-d H:i:s', strtotime("+ {$live_month}month"));
+		}
+		else
+		{
+			$card_data['time_expire'] = date('Y-m-d H:i:s', strtotime("+ {$live_month}month", strtotime($card_data['time_expire'])));
+		}
+
+		/**
+		 * 如该卡已被停号，并且充值后最大可使用流量大于0，需重新开启流量卡
+		 */
+		if ($card_info['unicom_stop'] == 1 && $card_data['max_unused'] > 0)
+		{
+			$params = array(
+				'cmd'          => 'action',
+				'serialNumber' => $card_info['card_sn'],
+				'timestamp'    => time(),
+				'token'        => md5(UNICOM_KEY . date('dHYm')),
+				'opFlag'       => 0
+			);
+			$res    = json_decode(wcore_utils::curl(UNICOM_URL, $params, true), true);
+			if ($res['status'] == 1)
+			{
+				$card_data['unicom_stop'] = 0;
+			}
+			else
+			{
+				$mdb->query('ROLLBACK');
+
+				return false;
+			}
+		}
+
+		/**
+		 * 先在缓存中更新数据，如缓存更新失败则直接更新到数据库
+		 */
+		$result = $this->mem_set("GPRS-CARD-{$card_data['card_iccid']}", $card_data, 0);
+		if (!$result)
+		{
+			$mdb->query("UPDATE cc_gprs_card SET {$mdb->make_sql($card_data, 'u')} WHERE card_id = '{$card_info['card_id']}'");
+			$result = $mdb->affected_rows();
+		}
+		else
+		{
+			$this->mem->push($this->mem_type_res, 'GPRS-QUEUE', $card_info['card_iccid']);    //将流量卡ICCID加入到队列中
+		}
+
+		/**
+		 * 缓存或数据库都更新失败，事务回滚
+		 */
+		if (!$result)
+		{
+			$mdb->query('ROLLBACK');
+
+			return false;
+		}
+
+		$mdb->query('COMMIT');
+
+		return true;
+	}
+}
+?>

@@ -1,0 +1,168 @@
+<?php
+/**
+ * 微信js
+ */
+class modules_wechat extends modules_mem
+{
+	/**
+	 * @var int 公共平台APPID
+	 */
+	private $_appid = WX_APPID;
+
+	/**
+	 * @var int 公共平台appsecret
+	 */
+	private $_appsecret = WX_APPSECRET;
+
+	/**
+	 * 获取access token
+	 */
+	public function getAccessToken()
+	{
+		$access_token = $this->mem_get("ACCESS-TOKEN-{$this->_appid}");
+		if (!empty($access_token))
+		{
+			return $access_token;
+		}
+
+		$url          = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={$this->_appid}&secret={$this->_appsecret}";
+		$res          = json_decode($this->curl($url), true);
+		$access_token = isset($res['access_token']) ? $res['access_token'] : '';
+		$this->mem_set("ACCESS-TOKEN-{$this->_appid}", $access_token);
+
+		return $access_token;
+	}
+
+	/**
+	 * 获取jsapi
+	 */
+	public function getJsapiTicket()
+	{
+		$jsapi_ticket = $this->mem_get("JSAPI-TICKET-{$this->_appid}");
+		if (!empty($jsapi_ticket))
+		{
+			return $jsapi_ticket;
+		}
+
+		$access_token = $this->getAccessToken();
+		$url          = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token={$access_token}&type=jsapi";
+		$res          = json_decode($this->curl($url), true);
+		$jsapi_ticket = isset($res['ticket']) ? $res['ticket'] : '';
+		$this->mem_set("JSAPI-TICKET-{$this->_appid}", $jsapi_ticket);
+
+		return $jsapi_ticket;
+	}
+
+	/**
+	 * 获取JSAPI加密后的所有参数
+	 *
+	 * @return string
+	 */
+	public function getJsapiParameters()
+	{
+		$string     = '';
+		$parameters = array(
+			'noncestr'     => $this->createNonce(),
+			'jsapi_ticket' => $this->getJsapiTicket(),
+			'timestamp'    => time(),
+			'url'          => substr(HTTP_STORE, 0, -1) . $_SERVER['REQUEST_URI'],
+		);
+		ksort($parameters);
+		foreach ($parameters as $k => $v)
+		{
+			$string .= "{$k}={$v}&";
+		}
+		$parameters['appid']     = $this->_appid;
+		$parameters['signature'] = sha1(substr($string, 0, -1));
+
+		return $parameters;
+	}
+
+	/**
+	 * 创建临时字符串
+	 *
+	 * @param int $length 创建长度
+	 * @return string
+	 */
+	public function createNonce($length = 32)
+	{
+		$str   = '';
+		$chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+		for ($i = 0; $i < $length; $i++)
+		{
+			$str .= substr($chars, mt_rand(0, strlen($chars) - 1), 1);
+		}
+
+		return $str;
+	}
+
+	/**
+	 * CURL POST GET 请求
+	 *
+	 * @param  string $url     请求URL地址
+	 * @param array   $params  请求数据
+	 * @param bool    $ispost  是否为POST方式
+	 * @param string  $referer 引用地址
+	 * @param bool    $randip  是否伪装IP
+	 * @return mixed
+	 */
+	protected function curl($url, $params = array(), $ispost = false, $referer = '', $randip = false)
+	{
+		$header = array(
+			'Connection: keep-alive',
+			'Accept-Language: en-US,en;q=0.5',
+			'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+			'User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:35.0) Gecko/20100101 Firefox/35.0'
+		);
+		if ($randip)
+		{
+			$make_ip  = mt_rand(100, 254) . '.' . mt_rand(0, 254) . '.' . mt_rand(0, 254) . '.' . mt_rand(0, 254);
+			$header[] = "CLIENT-IP: {$make_ip}";
+			$header[] = "X-FORWARDED-FOR: {$make_ip}";
+		}
+		if ($referer)
+		{
+			$header[] = "Referer: {$referer}";
+		}
+
+		$curl = curl_init();
+		if ($ispost)//POST方式发送数据
+		{
+			curl_setopt($curl, CURLOPT_POST, 1);//POST数据
+			curl_setopt($curl, CURLOPT_POSTFIELDS, $params);
+		}
+		curl_setopt($curl, CURLOPT_URL, $url);//POST地址
+		curl_setopt($curl, CURLOPT_TIMEOUT, 30);//30秒超时
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);//不校验HTTPS协议
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);//不校验SSL的主机
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);//返回执行后的结果
+		curl_setopt($curl, CURLOPT_HTTPHEADER, $header);//发送各种头协议
+		$str = curl_exec($curl);
+		curl_close($curl);
+
+		return $str;
+	}
+
+	/**
+	 * 获取微信用户openid
+	 */
+	public function getOpenid()
+	{
+		if (!isset($_GET['code']))
+		{
+			$url = urlencode(HTTP_STORE . $_GET['route']);
+			$url = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=' . WX_APPID . "&redirect_uri={$url}&response_type=code&scope=snsapi_base&state=sptcj#wechat_redirect";
+			Header("Location: $url");
+			exit();
+		}
+
+		/**
+		 * 根据得到的微信授权code登录，获取微信open id
+		 */
+		$url = 'https://api.weixin.qq.com/sns/oauth2/access_token?appid=' . WX_APPID . '&secret=' . WX_APPSECRET . "&code={$_GET['code']}&grant_type=authorization_code";
+		$res = json_decode($this->curl($url), true);
+
+		return isset($res['openid']) ? $res['openid'] : 0;
+	}
+}
+?>

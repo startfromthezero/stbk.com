@@ -1,0 +1,159 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?><div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<?php if ($success) { ?>
+	<div class="success"><?php echo $success; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/czk" class="button btn-red"><?php echo $button_reset; ?></a>
+				<?php if ($mpermission) { ?><a href="<?php echo $insert; ?>" class="button btn-green"><?php echo $button_make_czk; ?></a><?php } ?>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_zck_code; ?></td>
+					<td><?php echo $text_the_user; ?></td>
+					<td><?php echo $text_zck_value; ?></td>
+					<td><?php echo $text_zck_gprs; ?></td>
+					<td><?php echo $text_live_month; ?></td>
+					<td class="center"><?php echo $text_time_used; ?></td>
+					<td class="center"><?php echo $text_time_added; ?></td>
+					<td class="center"><?php echo $text_time_expire; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td><input type="text" name="zck_code" value="<?php echo $zck_code; ?>" size="12" /></td>
+					<td>
+						<select name="org_id">
+							<option value=""></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected=`"selected"<?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td>
+						<input style="width:40%;" type="text" name="used_date_start" value="<?php echo $used_date_start; ?>" id="used_date-start" size="5" />
+						- <input style="width:40%;" type="text" name="used_date_end" value="<?php echo $used_date_end; ?>" id="used_date-end" size="5" />
+					</td>
+					<td>
+						<input style="width:40%;" type="text" name="added_date_start" value="<?php echo $added_date_start; ?>" id="added_date-start" size="5" />
+						- <input style="width:40%;" type="text" name="added_date_end" value="<?php echo $added_date_end; ?>" id="added_date-end" size="5" />
+					</td>
+					<td></td>
+				</tr>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><?php echo $item['zck_code']; ?></td>
+					<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : ''; ?></td>
+					<td><?php echo $this->currency->format($item['zck_value']); ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['zck_gprs']); ?></td>
+					<td><?php echo $arr_live_month[$item['live_month']]; ?></td>
+					<td class="center"><?php echo substr($item['time_used'],0,16); ?></td>
+					<td class="center"><?php echo substr($item['time_added'],0,16); ?></td>
+					<td class="center"><?php echo $item['time_expire']; ?></td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="7"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	function enterPress()
+	{
+		if (event.keyCode == 13)
+		{
+			filter();
+		}
+	}
+	function filter()
+	{
+		var url = '/gprs/czk?';
+		var org_id = $('select[name=\'org_id\']').val();
+		if (org_id)
+		{
+			url += '&org_id=' + org_id;
+		}
+		var zck_code = $('input[name=\'zck_code\']').val();
+		if (zck_code)
+		{
+			url += '&zck_code=' + encodeURIComponent(zck_code);
+		}
+		var added_date_start = $('input[name=\'added_date_start\']').val();
+		if (added_date_start)
+		{
+			url += '&added_date_start=' + encodeURIComponent(added_date_start);
+		}
+
+		var added_date_end = $('input[name=\'added_date_end\']').val();
+		if (added_date_end)
+		{
+			url += '&added_date_end=' + encodeURIComponent(added_date_end);
+		}
+		var used_date_start = $('input[name=\'used_date_start\']').val();
+		if (used_date_start)
+		{
+			url += '&used_date_start=' + encodeURIComponent(used_date_start);
+		}
+
+		var used_date_end = $('input[name=\'used_date_end\']').val();
+		if (used_date_end)
+		{
+			url += '&used_date_end=' + encodeURIComponent(used_date_end);
+		}
+		location = url;
+	}
+
+	$('#used_date-start').datepicker({
+		dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+		{
+			$('#used_date-end').datepicker('option', 'minDate', sltDate);
+		}
+	});
+
+	$('#used_date-end').datepicker({
+		dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+		{
+			$('#used_date-start').datepicker('option', 'maxDate', sltDate);
+		}
+	});
+
+	$('#added_date-start').datepicker({
+		dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+		{
+			$('#added_date-end').datepicker('option', 'minDate', sltDate);
+		}
+	});
+
+	$('#added_date-end').datepicker({
+		dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+		{
+			$('#added_date-start').datepicker('option', 'maxDate', sltDate);
+		}
+	});
+</script>
+<?php echo $page_footer; ?>

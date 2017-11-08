@@ -1,0 +1,110 @@
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<div id="main3" style="height:400px;"></div><!-- ECharts单文件引入 -->
+<script type="text/javascript">
+	// 路径配置
+	require.config({
+		paths: {
+			echarts: 'http://echarts.baidu.com/build/dist'
+		}
+	});
+
+	// 使用
+	require(
+	[
+		'echarts',
+		'echarts/chart/bar' // 使用柱状图就加载bar模块，按需加载
+	],
+	function (ec)
+	{
+		// 基于准备好的dom，初始化echarts图表
+		var myChart = ec.init(document.getElementById('main3'));
+
+		var zrColor = require('zrender/tool/color');
+		var colorList = <?php echo $color; ?>;
+		var itemStyle = {
+			normal: {
+				color: function (params)
+				{
+					if (params.dataIndex < 0)
+					{
+						// for legend
+						return zrColor.lift(
+								colorList[colorList.length - 1], params.seriesIndex * 0.1
+						);
+					}
+					else
+					{
+						// for bar
+						return zrColor.lift(
+								colorList[params.dataIndex], params.seriesIndex * 0.1
+						);
+					}
+				}
+			}
+		};
+		var option = {
+			title     : {
+				text   : '机构充值总金额（元）',
+				x: 'center'
+			},
+			tooltip   : {
+				trigger        : 'axis',
+				backgroundColor: 'rgba(255,255,255,0.7)',
+				axisPointer    : {
+					type: 'shadow'
+				},
+				formatter      : function (params)
+				{
+					// for text color
+					var color = '#FF0000';
+					var res = '<div style="color:' + color + '">';
+					res += '<strong>' + params[0].name + '</strong>'
+					for (var i = 0, l = params.length; i < l; i++)
+					{
+						res += '<br/>' + params[i].seriesName + ' : ' + params[i].value+'元'
+					}
+					res += '</div>';
+					return res;
+				}
+			},
+			toolbox   : {
+				show   : true,
+				orient : 'vertical',
+				y      : 'center',
+				feature: {
+					mark       : {show: true},
+					dataView   : {show: true, readOnly: false},
+					restore    : {show: true},
+					saveAsImage: {show: true}
+				}
+			},
+			calculable: true,
+			grid      : {
+				y : 80,
+				y2: 40,
+				x2: 40
+			},
+			xAxis     : [
+				{
+					type: 'category',
+					data: <?php echo $org; ?>
+				}
+			],
+			yAxis     : [
+				{
+					type: 'value',
+					name: '总金额（元）'
+				}
+			],
+			series    : [
+				{
+					name     : '总金额',
+					type     : 'bar',
+					itemStyle: itemStyle,
+					data     : <?php echo $data; ?>
+				}
+			]
+		};
+		myChart.setOption(option);
+	});
+</script>

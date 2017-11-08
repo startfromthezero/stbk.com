@@ -1,0 +1,70 @@
+<?php echo $page_header; ?>
+<div class="body">
+	<table class="list">
+		<tr height="60px">
+			<td style="font-size:20px;"><?php echo $card_info['card_iccid']; ?></td>
+			<td align="right">
+				<div class="iccid-num" style="background:<?php if ($card_info['unicom_stop']) { ?>#FEB353<?php } else { ?> #2DAAF2<?php } ?>;">
+					<?php echo $arr_card_status[$card_info['unicom_stop']]; ?>
+				</div>
+			</td>
+		</tr>
+		<tr height="100px">
+			<td colspan="2">
+				<div style="background:#41C0BE;height:30px;border-radius:5px;">
+					<div id="plan" style="background:#FEB353;width:<?php echo (round($card_info['used_total']/($card_info['used_total']+$card_info['max_unused'])*100,2)).'%'; ?>;height:30px;border-radius:5px 0 0 5px;"></div>
+				</div>
+				<div style="margin:10px auto;width:100%">
+					<div style="float:left;color:#FEB353"><?php echo $text_used_total,modules_funs::gpgsFormat($card_info['used_total']); ?></div>
+					<div style="float:right;color:#41C0BE"><?php echo $text_max_unused,modules_funs::gpgsFormat($card_info['max_unused']); ?></div>
+				</div>
+			</td>
+		</tr>
+		<tr height="60px">
+			<td><?php echo $text_total_gprs,modules_funs::gpgsFormat($card_info['used_total']+$card_info['max_unused']); ?><p><span class="help"><?php echo $text_not_zero_out; ?></span></p></td>
+			<td><a class="btn-dkGreen" href="/app/main/scan"><?php echo $button_cut; ?></a></td>
+		</tr>
+	</table>
+	<div class="buttons" style="margin:20px 10px;">
+		<div class="center"><a class="button btn-orange" href="/app/main/topup"><?php echo $button_online_pay; ?></a></div>
+	</div>
+</div>
+<div id="tabs" class="htabs">
+	<a class="selected" href="/app/main/info"><?php echo $text_my_card; ?></a>
+	<a href="/app/main/paylog"><?php echo $text_card_paylog; ?></a>
+</div>
+<br />
+<?php if (!empty($pack_info)) { ?>
+	<?php foreach ($pack_info as $v) { ?>
+	<div style="border-radius:10px;background:#F7F7F7;margin:10px;">
+		<h2><?php echo modules_funs::packShow($v['gprs_total'], $v['allot_month'],$v['allot_value']); ?></h2>
+		<table class="list">
+			<tr>
+				<td><?php echo $text_pack_gprs; ?></td>
+				<td><?php echo modules_funs::gpgsFormat($v['gprs_total']);?></td>
+			</tr>
+			<?php if($v['allot_month'] != 1) { ?>
+			<tr>
+				<td><?php echo $text_used_month; ?></td>
+				<td><?php echo $v['assigned_month'],$text_how_month; ?></td>
+			</tr>
+			<tr>
+				<td><?php echo $text_unused_month; ?></td>
+				<td><?php echo ($v['allot_month']-$v['assigned_month']),$text_how_month; ?></td>
+			</tr>
+			<?php } ?>
+			<tr>
+				<td><?php echo $text_balance_dval; ?></td>
+				<td><?php echo modules_funs::gpgsFormat($v['balance_dval']); ?></td>
+			</tr>
+			<tr>
+				<td style="border:none"><?php echo $text_time_expire; ?></td>
+				<td style="border:none"><?php echo $v['time_expire']; ?></td>
+			</tr>
+		</table>
+	</div>
+	<?php } ?>
+<?php } else { ?>
+<div class="noresult"><?php echo $error_no_pack; ?></div>
+<?php } ?>
+<?php echo $page_footer; ?>

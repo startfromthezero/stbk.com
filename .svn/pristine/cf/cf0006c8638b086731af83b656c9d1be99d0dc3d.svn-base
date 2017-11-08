@@ -1,0 +1,98 @@
+<?php
+class ControllerPaymentWxpay extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('payment/wxpay');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$vrs = $this->language->data;
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate())
+		{
+			$this->registry->model('setting/setting');
+			$this->model_setting_setting->editSetting('wxpay', $this->request->post);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('extension/payment'));
+		}
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_payment'),
+			'href'      => $this->url->link('extension/payment'),
+			'separator' => ' :: '
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('payment/wxpay'),
+			'separator' => ' :: '
+		);
+
+		$vrs['action']             = $this->url->link('payment/wxpay');
+		$vrs['cancel']             = $this->url->link('extension/payment');
+		$vrs['wxpay_appid']        = isset($this->request->post['wxpay_appid']) ? $this->request->post['wxpay_appid'] : $this->config->get('wxpay_appid');
+		$vrs['wxpay_mchid']        = isset($this->request->post['wxpay_mchid']) ? $this->request->post['wxpay_mchid'] : $this->config->get('wxpay_mchid');
+		$vrs['wxpay_mchkey']       = isset($this->request->post['wxpay_mchkey']) ? $this->request->post['wxpay_mchkey'] : $this->config->get('wxpay_mchkey');
+		$vrs['wxpay_appsecret']    = isset($this->request->post['wxpay_appsecret']) ? $this->request->post['wxpay_appsecret'] : $this->config->get('wxpay_appsecret');
+		$vrs['wxpay_sslcert_path'] = isset($this->request->post['wxpay_sslcert_path']) ? $this->request->post['wxpay_sslcert_path'] : $this->config->get('wxpay_sslcert_path');
+		$vrs['wxpay_sslkey_path']  = isset($this->request->post['wxpay_sslkey_path']) ? $this->request->post['wxpay_sslkey_path'] : $this->config->get('wxpay_sslkey_path');
+
+		$vrs['error_warning']      = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['error_appid']        = isset($this->error['appid']) ? $this->error['appid'] : '';
+		$vrs['error_mchid']        = isset($this->error['mchid']) ? $this->error['mchid'] : '';
+		$vrs['error_mchkey']       = isset($this->error['mchkey']) ? $this->error['mchkey'] : '';
+		$vrs['error_appsecret']    = isset($this->error['appsecret']) ? $this->error['appsecret'] : '';
+		$vrs['error_sslcert_path'] = isset($this->error['sslcert_path']) ? $this->error['sslcert_path'] : '';
+		$vrs['error_sslkey_path']  = isset($this->error['sslkey_path']) ? $this->error['sslkey_path'] : '';
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/payment/wxpay.tpl', $vrs);
+	}
+
+	private function validate()
+	{
+		if (!$this->user->hasPermission('modify', 'payment/wxpay'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		if (!$this->request->post['wxpay_appid'])
+		{
+			$this->error['appid'] = $this->language->get('error_appid');
+		}
+
+		if (!$this->request->post['wxpay_mchid'])
+		{
+			$this->error['mchid'] = $this->language->get('error_mchid');
+		}
+
+		if (!$this->request->post['wxpay_mchkey'])
+		{
+			$this->error['mchkey'] = $this->language->get('error_mchkey');
+		}
+
+		if (!$this->request->post['wxpay_appsecret'])
+		{
+			$this->error['appsecret'] = $this->language->get('error_appsecret');
+		}
+
+		return !$this->error;
+	}
+}
+?>

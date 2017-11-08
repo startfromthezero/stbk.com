@@ -1,0 +1,270 @@
+<?php
+class ControllerSettingOta extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('setting/ota');
+		$vrs = $this->language->data;
+		$this->document->setTitle($this->language->get('heading_title'));
+		$vrs['heading_title']   = $this->language->get('heading_title');
+		$vrs['button_insert']   = $this->language->get('button_insert');
+		$vrs['text_no_results'] = $this->language->get('text_no_results');
+
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('setting/ota'),
+			'separator' => ' :: '
+		);
+		$vrs['verType']       = $ver_type = $this->request->get_var('verType', 's', '', 'ota');
+		$page                 = isset($this->request->get['page']) ? $this->request->get['page'] : 1;
+		$data                 = array(
+			'start' => ((int)$page - 1) * $this->config->get('config_admin_limit'),
+			'limit' => $this->config->get('config_admin_limit')
+		);
+
+		$this->registry->model('setting/ota');
+		if ($ver_type == 'ota')//列表版本
+		{
+			$vrs['items'] = $this->model_setting_ota->getItems();
+		}
+		else if ($ver_type == 'devices')//列表升级成功后的设备
+		{
+			$this->registry->model('user/user');
+			$vrs['org_id']    = $data['org_id'] = isset($this->request->get['org_id']) ? $this->request->get['org_id'] : null;
+			$vrs['device_sn'] = $data['device_sn'] = isset($this->request->get['device_sn']) ? $this->request->get['device_sn'] : null;
+			$vrs['items']     = $this->model_setting_ota->getOtaDevices($data);
+			$vrs['orgs']      = $this->model_user_user->getOrgs();
+
+			/**
+			 * 连接组合处理
+			 */
+			$url = '';
+			$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+			$url .= isset($this->request->get['device_sn']) ? '&device_sn=' . $this->request->get['device_sn'] : '';
+
+			/**
+			 * 分页处理
+			 */
+			$pagination        = new Pagination();
+			$pagination->total = $this->model_setting_ota->getOtaDevices($data, true);
+			$pagination->page  = $page;
+			$pagination->limit = $this->config->get('config_admin_limit');
+			$pagination->text  = $this->language->get('text_pagination');
+			$pagination->url   = $this->url->link('setting/ota', "{$url}&verType={$ver_type}&page={page}", true);
+			$vrs['pagination'] = $pagination->render();
+		}
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/setting/ota.tpl', $vrs);
+	}
+
+	/**
+	 * 查阅版本
+	 */
+	public function details()
+	{
+		$this->registry->language('setting/ota');
+		$this->registry->model('setting/ota');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$vrs = $this->language->data;
+
+		$org_id       = $this->request->get_var('uid', 'i');
+		$vrs['items'] = $this->model_setting_ota->getOtas($org_id);
+
+		$vrs['heading_title'] = $this->language->get('heading_title');
+
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('setting/ota'),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/setting/ota-list.tpl', $vrs);
+	}
+
+	/**
+	 * 增加版本
+	 */
+	public function add()
+	{
+		$this->registry->language('setting/ota');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$vrs = $this->language->data;
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate())
+		{
+			$data = array(
+				'org_id'       => $this->request->get_var('org_id', 'i'),
+				'org_code'     => $this->request->get_var('org_code'),
+				'hard_code'    => $this->request->get_var('hard_code'),
+				'soft_code'    => $this->request->get_var('soft_code'),
+				'soft_for'     => $this->request->get_var('soft_for'),
+				'soft_desc'    => $this->request->get_var('soft_desc'),
+				'is_forced'    => $this->request->get_var('is_forced', 'i'),
+				'pack_url'     => $this->request->get_var('pack_url'),
+				'pack_md5'     => $this->request->get_var('pack_md5'),
+				'pack_size'    => $this->request->get_var('pack_size', 'i'),
+				'time_publish' => $this->request->get_var('time_publish'),
+			);
+			$this->registry->model('setting/ota');
+			$this->model_setting_ota->insert($data);
+			$this->registry->redirect($this->url->link('setting/ota'));
+		}
+
+		$vrs['heading_title'] = $this->language->get('heading_title');
+		$arr                  = array(
+			'org_code',
+			'hard_code',
+			'soft_code',
+			'soft_for',
+			'soft_desc',
+			'is_forced',
+			'time_publish',
+			'pack_url',
+			'pack_md5',
+			'pack_size'
+		);
+		foreach ($arr as $v)
+		{
+			$vrs[$v]           = $this->request->get_var($v);
+			$vrs["text_{$v}"]  = $this->language->get("text_{$v}");
+			$vrs["error_{$v}"] = isset($this->error[$v]) ? $this->error[$v] : '';
+		}
+
+		$vrs['cancel']        = $this->url->link('setting/ota');
+		$vrs['action']        = $this->url->link('setting/ota/add');
+		$vrs['button_save']   = $this->language->get('button_save');
+		$vrs['button_cancel'] = $this->language->get('button_cancel');
+
+		$vrs['error_warning']    = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['error_org_code']   = isset($this->error['org_code']) ? $this->error['org_code'] : '';
+		$vrs['error_hard_code']  = isset($this->error['hard_code']) ? $this->error['hard_code'] : '';
+		$vrs['error_zsoft_code'] = isset($this->error['soft_code']) ? $this->error['soft_code'] : '';
+		$vrs['error_soft_for']   = isset($this->error['soft_for']) ? $this->error['soft_for'] : '';
+		$vrs['error_soft_desc']  = isset($this->error['soft_desc']) ? $this->error['soft_desc'] : '';
+		$vrs['error_pack_url']   = isset($this->error['pack_url']) ? $this->error['pack_url'] : '';
+		$vrs['error_pack_md5']   = isset($this->error['pack_md5']) ? $this->error['pack_md5'] : '';
+		$vrs['error_pack_size']  = isset($this->error['pack_size']) ? $this->error['pack_size'] : '';
+
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('setting/ota'),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 获取机构列表
+		 */
+		$this->registry->model('setting/ota');
+		$vrs['users']  = $this->model_setting_ota->getOrgs();
+		$vrs['org_id'] = $this->request->get_var('uid', 'i');
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/setting/ota-add.tpl', $vrs);
+	}
+
+	/*
+	 * 设置版本无效
+	 */
+	public function otaValid()
+	{
+		$this->registry->language("setting/ota");
+		$this->registry->model("setting/ota");
+		$ota_id   = $this->request->get_var('ota_id', 'i');
+		$is_valid = $this->request->get_var('is_valid', 'i');
+
+		$data = array(
+			'ota_id'   => $ota_id,
+			'is_valid' => $is_valid ? 1 : 0,
+		);
+
+		echo ($this->model_setting_ota->update($data)) ? 'ok' : $this->language->get('error_ota');
+	}
+
+	private function validate()
+	{
+		if (!$this->user->hasPermission('modify', 'setting/ota'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		if (!$this->request->post['org_code'])
+		{
+			$this->error['org_code'] = $this->language->get('error_org_code');
+		}
+
+		if (!$this->request->post['hard_code'])
+		{
+			$this->error['hard_code'] = $this->language->get('error_hard_code');
+		}
+
+		if (!$this->request->post['soft_code'])
+		{
+			$this->error['soft_code'] = $this->language->get('error_soft_code');
+		}
+
+		if (!$this->request->post['soft_for'])
+		{
+			$this->error['soft_for'] = $this->language->get('error_soft_for');
+		}
+
+		if (!$this->request->post['soft_desc'])
+		{
+			$this->error['soft_desc'] = $this->language->get('error_soft_desc');
+		}
+
+		if (!wcore_validate::url($this->request->post['pack_url']))
+		{
+			$this->error['pack_url'] = $this->language->get('error_pack_url');
+		}
+
+		if (empty($this->request->post['pack_md5']))
+		{
+			$this->error['pack_md5'] = $this->language->get('error_pack_md5');
+		}
+
+		if (empty($this->request->post['pack_size']))
+		{
+			$this->error['pack_size'] = $this->language->get('error_pack_size');
+		}
+
+		return !$this->error;
+	}
+}
+?>

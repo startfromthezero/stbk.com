@@ -1,0 +1,143 @@
+<?php
+class ControllerGprsUion extends Controller
+{
+	private $error = array();
+
+	private $_key = '9c5987f81c84850b1165834d041bd33a'; //查询密钥
+
+	private $_url = 'http://122.143.21.162/api.php'; //查询地址
+
+	/**
+	 * 联通流量卡查询
+	 */
+	public function detail()
+	{
+		$number = $this->request->get_var('number');
+//		$key    = "UION-CARD-{$number}";
+//		if ($data = $this->mem_get($key))
+//		{
+//			$result = array(
+//				'status' => 1,
+//				'data'   => $data
+//			);
+//			exit(json_encode($result));
+//		}
+		$params = array(
+			'cmd'          => 'mobile',
+			'flag'         => $this->request->get_var('flag', 'i', '', 2),
+			'operDate'     => $this->request->get_var('date', 's', '', date('Ym')),
+			'serialNumber' => $number,
+			'timestamp'    => time(),
+			'token'        => md5($this->_key . date('dHYm')),
+		);
+		$result = json_decode(wcore_utils::curl($this->_url, $params, true), true);
+
+		if ($result['status'] == 0)
+		{
+			exit(json_encode($result));
+		}
+
+		if ($result['data']['state'] != 1)
+		{
+			$result = array(
+				'status' => 0,
+				'msg'    => $result['data']['state'] == 2 ? '该卡已停机' : '该卡暂未激活'
+			);
+			exit(json_encode($result));
+		}
+
+		$data = array(
+			'consumeDataMon' => modules_funs::gpgsFormat($result['data']['consumeDataMon'] / 1048576),
+			'consumeDataAll' => modules_funs::gpgsFormat($result['data']['consumeDataAll'] / 1048576),
+		);
+
+		//$this->mem_set($key, $data);
+
+		$result = array(
+			'status' => 1,
+			'data'   => $data
+		);
+		exit(json_encode($result));
+	}
+
+	/**
+	 * 开启与停止流量卡
+	 */
+	public function stop()
+	{
+		$this->registry->language('gprs/card');
+		$opFlag  = $this->request->get_var('opFlag', 'i');
+		$card_sn = $this->request->get_var('number');
+		$params  = array(
+			'cmd'          => 'action',
+			'serialNumber' => $card_sn,
+			'timestamp'    => time(),
+			'token'        => md5($this->_key . date('dHYm')),
+			'opFlag'       => $opFlag ? 0 : 1
+		);
+
+		$result = json_decode(wcore_utils::curl($this->_url, $params, true), true);
+
+
+		if ($result['status'] == 1)
+		{
+			//$this->mem_del("UION-CARD-{$card_sn}");
+			$this->registry->model('gprs/card');
+			$data = array(
+				'card_id'     => $this->request->get_var('card_id', 'i'),
+				'unicom_stop' => $opFlag ? 0 : 1,
+			);
+			if ($opFlag)
+			{
+				$data['time_stop'] = 'dbf|NOW()';
+			}
+
+			return $this->model_gprs_card->update($data) ? 'ok' : $this->language->get('error_card');
+		}
+
+		return $this->language->get('error_card');
+	}
+
+	public function index()
+	{
+		$key = '9c5987f81c84850b1165834d041bd33a';
+		$url = 'http://122.143.21.162/api.php';
+
+		$data = array(
+			'cmd'          => 'action',
+			'flag'         => '2',
+			'operDate'     => '201606',
+			'poolCode'     => '1049',
+			'serialNumber' => '14578600790',
+			'opFlag'       => 1,
+		);
+
+		$data['timestamp'] = time();
+		$data['token']     = md5($key . date('dHYm', $data['timestamp']));
+
+		$time_start = $this->microtime_float();
+
+		$result = json_decode(wcore_utils::curl($url, $data, true), true);
+
+		// Sleep for a while
+		//usleep(100);
+
+		$time_end = $this->microtime_float();
+		$time     = $time_end - $time_start;
+
+		echo "Did nothing in $time seconds\n";
+		wcore_utils::debug($result);
+	}
+
+	/**
+	 * Simple function to replicate PHP 5 behaviour
+	 */
+	function microtime_float()
+	{
+		list($usec, $sec) = explode(" ", microtime());
+
+		return ((float)$usec + (float)$sec);
+	}
+
+}
+?>

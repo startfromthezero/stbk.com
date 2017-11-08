@@ -1,0 +1,42 @@
+<?php echo $page_header; ?>
+<style>
+.history{width:100%;}
+.history li{padding:10px;font-size:18px}
+</style>
+<a href="/app/main/scan"><img src="/img/app/gprs-head.jpg" /></a>
+<div class="body">
+	<h2>历史记录查询ICCID卡</h2>
+	<ol id="history"></ol>
+</div>
+<script type="text/javascript">
+
+function selectHistory(obj)
+{
+	var iccid = $(obj).text();
+	if (iccid)
+	{
+		$("input[name='iccid']").val(iccid);
+		$("#history").hide();
+	}
+}
+
+//加载搜索历史记录
+function loadHistory()
+{
+	var historyData = localStorage.getItem('iccidHistory');
+	if (!historyData)
+	{
+		return;
+	}
+	var historyArr = JSON.parse(historyData);
+	var historyHtml = '';
+	$.each(historyArr, function (i)
+	{
+		historyHtml += '<li><a href="/app/main/scan?iccid=' + historyArr[i] + '">' + historyArr[i] + '</a></li>';
+	});
+	$('#history').html(historyHtml);
+	$("#history").show();
+}
+loadHistory();
+</script>
+<?php echo $page_footer; ?>

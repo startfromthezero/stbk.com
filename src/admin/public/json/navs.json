@@ -1,0 +1,52 @@
+[{
+	"title" : "后台首页",
+	"icon" : "icon-computer",
+	"href" : "/index/index",
+	"spread" : false
+},{
+	"title" : "文章列表",
+	"icon" : "icon-text",
+	"href" : "news/index",
+	"spread" : false
+},{
+	"title" : "友情链接",
+	"icon" : "&#xe64c;",
+	"href" : "links/index",
+	"spread" : false
+},{
+	"title" : "系统基本参数",
+	"icon" : "&#xe631;",
+	"href" : "/systemdata/index",
+	"spread" : false
+},{
+	"title" : "其他页面",
+	"icon" : "&#xe630;",
+	"href" : "",
+	"spread" : false,
+	"children" : [
+		{
+			"title" : "404页面",
+			"icon" : "&#xe61c;",
+			"href" : "page/404.html",
+			"spread" : false
+		},
+		{
+			"title" : "登录",
+			"icon" : "&#xe609;",
+			"href" : "page/login/login.html",
+			"spread" : false,
+			"target" : "_blank"
+		}
+	]
+},{
+	"title": "权限设置",
+	"icon": "icon-text",
+	"href": "user/user_permission",
+	"spread": false
+},
+{
+	"title": "错误日志",
+	"icon": "icon-text",
+	"href": "tool/error_log",
+	"spread": false
+}]

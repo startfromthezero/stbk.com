@@ -1,0 +1,190 @@
+<?php
+class ControllerExtensionPayment extends Controller
+{
+	public function index()
+	{
+		$this->registry->language('extension/payment');
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('extension/payment'),
+			'separator' => ' :: '
+		);
+
+		$vrs['heading_title']     = $this->language->get('heading_title');
+		$vrs['text_no_results']   = $this->language->get('text_no_results');
+		$vrs['text_confirm']      = $this->language->get('text_confirm');
+		$vrs['column_name']       = $this->language->get('column_name');
+		$vrs['column_status']     = $this->language->get('column_status');
+		$vrs['column_sort_order'] = $this->language->get('column_sort_order');
+		$vrs['column_action']     = $this->language->get('column_action');
+
+		/**
+		 * 安装结果处理
+		 */
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+
+		$vrs['error'] = '';
+		if (isset($this->session->data['error']))
+		{
+			$vrs['error'] = $this->session->data['error'];
+			unset($this->session->data['error']);
+		}
+
+		/**
+		 * 判断已安装的扩展，文件是否存在，如果不存在则卸载此扩展
+		 */
+		$this->registry->model('setting/extension');
+		$extensions = $this->model_setting_extension->getInstalled('payment');
+		foreach ($extensions as $key => $value)
+		{
+			if (!file_exists(DIR_SITE . '/controller/payment/' . $value . '.php'))
+			{
+				$this->model_setting_extension->uninstall('payment', $value);
+				unset($extensions[$key]);
+			}
+		}
+
+		/**
+		 * 分析有哪些扩展文件,并检测是否已安装,列表出所有扩展
+		 */
+		$vrs['extensions'] = array();
+		$files             = glob(DIR_SITE . '/controller/payment/*.php');
+		if ($files)
+		{
+			foreach ($files as $file)
+			{
+				$extension = basename($file, '.php');
+
+				/**
+				 * 判断用户是否有查看权限,如果没有则扩展将不被显示
+				 */
+				if (!$this->user->hasPermission('access', "payment/{$extension}"))
+				{
+					continue;
+				}
+
+				/**
+				 * 组合扩展列表
+				 */
+				$action = array();
+				$this->registry->language("payment/{$extension}");
+				$mpermission = $this->user->hasPermission('modify', "payment/{$extension}");
+				if (!in_array($extension, $extensions))
+				{
+					if ($mpermission)
+					{
+						$action[] = array(
+							'text' => $this->language->get('text_install'),
+							'href' => $this->url->link('extension/payment/install', "extension={$extension}", true)
+						);
+					}
+				}
+				else
+				{
+					$action[] = array(
+						'text' => $this->language->get($mpermission ? 'text_edit' : 'text_view'),
+						'href' => $this->url->link("payment/{$extension}")
+					);
+
+					if ($mpermission)
+					{
+						$action[] = array(
+							'text' => $this->language->get('text_uninstall'),
+							'href' => $this->url->link('extension/payment/uninstall', "extension={$extension}", true)
+						);
+					}
+				}
+
+				$vrs['extensions'][] = array(
+					'name'       => $this->language->get('heading_title'),
+					'link'       => ($this->language->get("text_{$extension}") != "text_{$extension}") ? $this->language->get("text_{$extension}") : '',
+					'status'     => $this->config->get("{$extension}_status") ? $this->language->get('text_enabled') : $this->language->get('text_disabled'),
+					'sort_order' => $this->config->get("{$extension}_sort_order"),
+					'action'     => $action
+				);
+			}
+		}
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/extension/payment.tpl', $vrs);
+	}
+
+	public function install()
+	{
+		$this->registry->language('extension/payment');
+		if (!$this->user->hasPermission('modify', 'extension/payment'))
+		{
+			$this->session->data['error'] = $this->language->get('error_permission');
+			$this->registry->redirect($this->url->link('extension/payment'));
+		}
+		else
+		{
+			$this->registry->model('setting/extension');
+			$this->model_setting_extension->install('payment', $this->request->get['extension']);
+
+			$this->registry->model('user/user_group');
+			$this->model_user_user_group->addPermission($this->user->getId(), 'access', 'payment/' . $this->request->get['extension']);
+			$this->model_user_user_group->addPermission($this->user->getId(), 'modify', 'payment/' . $this->request->get['extension']);
+
+			require(DIR_SITE . '/controller/payment/' . $this->request->get['extension'] . '.php');
+			$class = 'ControllerPayment' . str_replace('_', '', $this->request->get['extension']);
+			$class = new $class($this->registry);
+			if (method_exists($class, 'install'))
+			{
+				$class->install();
+			}
+
+			$this->registry->redirect($this->url->link('extension/payment'));
+		}
+	}
+
+	public function uninstall()
+	{
+		$this->registry->language('extension/payment');
+		if (!$this->user->hasPermission('modify', 'extension/payment'))
+		{
+			$this->session->data['error'] = $this->language->get('error_permission');
+			$this->registry->redirect($this->url->link('extension/payment'));
+		}
+		else
+		{
+			$this->registry->model('setting/setting');
+			$this->registry->model('setting/extension');
+			$this->model_setting_extension->uninstall('payment', $this->request->get['extension']);
+			$this->model_setting_setting->deleteSetting($this->request->get['extension']);
+
+			require(DIR_SITE . '/controller/payment/' . $this->request->get['extension'] . '.php');
+			$class = 'ControllerPayment' . str_replace('_', '', $this->request->get['extension']);
+			$class = new $class($this->registry);
+			if (method_exists($class, 'uninstall'))
+			{
+				$class->uninstall();
+			}
+
+			$this->registry->redirect($this->url->link('extension/payment'));
+		}
+	}
+}
+?>

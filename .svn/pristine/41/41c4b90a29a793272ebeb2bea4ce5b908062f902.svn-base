@@ -1,0 +1,141 @@
+<?php
+class ControllerGprsCard extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	/**
+	 * 开启与停止流量卡
+	 */
+	public function stop()
+	{
+		$this->registry->language('gprs/card');
+		$this->registry->model('gprs/card');
+		$card_id   = $this->request->get_var('card_id', 'i');
+		$is_normal = $this->request->get_var('is_normal', 'i');
+		$data      = array(
+			'card_id'   => $card_id,
+			'is_normal' => $is_normal ? 1 : 0,
+		);
+		if (!$is_normal)
+		{
+			$data['time_stop'] = 'dbf|NOW()';
+		}
+
+		echo ($this->model_gprs_card->update($data)) ? 'ok' : $this->language->get('error_card');
+	}
+
+	/**
+	 * 机构流量ICCID卡统计图表
+	 */
+	public function chart()
+	{
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$this->registry->model('gprs/card');
+		$this->registry->language('gprs/card');
+		$vrs['chart'] = $this->model_gprs_card->getChart();
+		$vrs['color'] = json_encode($this->language->get('arr_color'));
+
+		return $this->view('template/gprs/card_chart.tpl', $vrs);
+	}
+
+	private function getList()
+	{
+		$vrs   = $this->language->data;
+		$sort  = isset($this->request->get['sort']) ? $this->request->get['sort'] : '';
+		$order = isset($this->request->get['order']) ? $this->request->get['order'] : 'ASC';
+		$page  = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/card'),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+		$data        = array(
+			'sort'               => $sort,
+			'order'              => $order,
+			'start'              => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'              => $this->config->get('config_admin_limit'),
+			'filter_org_id'      => $this->request->get_var('orgId', 'i'),
+			'filter_card_iccid'  => $this->request->get_var('iccid'),
+			'filter_time_expire' => $this->request->get_var('expire', 'i'),
+		);
+
+		$vrs['org_id']      = $data['filter_org_id'];
+		$vrs['card_iccid']  = $data['filter_card_iccid'];
+		$vrs['time_expire'] = $data['filter_time_expire'];
+		$vrs['items']       = $this->model_gprs_card->getItems($data);
+
+		$url = ($order == 'ASC') ? '&order=DESC' : '&order=ASC';
+		$url .= $page ? '&page=' . $page : '';
+		$url .= isset($this->request->get['orgId']) ? '&orgId=' . $this->request->get['orgId'] : '';
+		$url .= isset($this->request->get['iccid']) ? '&iccid=' . $this->request->get['iccid'] : '';
+		$url .= isset($this->request->get['expire']) ? '&expire=' . $this->request->get['expire'] : '';
+
+		$vrs['sort_gprs_month'] = $this->url->link('gprs/card', 'sort=gprs_month' . $url, true);
+		$vrs['sort_used_month'] = $this->url->link('gprs/card', 'sort=used_month' . $url, true);
+		$vrs['sort_used_total'] = $this->url->link('gprs/card', 'sort=used_total' . $url, true);
+		$vrs['sort_max_unused'] = $this->url->link('gprs/card', 'sort=max_unused' . $url, true);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= $sort ? '&sort=' . $sort : '';
+		$url .= $order ? '&order=' . $order : '';
+		$url .= isset($this->request->get['orgId']) ? '&orgId=' . $this->request->get['orgId'] : '';
+		$url .= isset($this->request->get['iccid']) ? '&iccid=' . $this->request->get['iccid'] : '';
+		$url .= isset($this->request->get['expire']) ? '&expire=' . $this->request->get['expire'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_gprs_card->getItems($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/card', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+		$vrs['sort']       = $sort;
+		$vrs['order']      = $order;
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/card_list.tpl', $vrs);
+	}
+}
+?>

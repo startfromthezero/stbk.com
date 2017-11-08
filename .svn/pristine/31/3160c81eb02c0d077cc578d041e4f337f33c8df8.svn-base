@@ -1,0 +1,59 @@
+<?php echo $page_header; ?>
+<style type="text/css">
+body{background:url('/view/image/login-bg.jpg') no-repeat scroll 50% 100%;}
+.login-box{width:550px;height:350px;margin:0 auto;background:url('/view/image/login.png') no-repeat top center;position:relative;text-align:center;}
+.login-div{position:absolute;width:320px;height:auto;top:25px;right:35px;}
+.login-box img{width:35%;}
+.login-box input{width:75%;height:30px;font-size:18px;color:#78797c;padding-left:50px;}
+.login-box .user{background:#f7f7f7 url('/view/image/loign-user.png') no-repeat 10px center;}
+.login-box .pwd{background:#f7f7f7 url('/view/image/login-pwd.png') no-repeat 10px center;}
+.login-box .cpc{background:#f7f7f7 url('/view/image/login-cpc.png') no-repeat 10px center;}
+.login-box .button{display:block;background:#1d8fe9;color:#FFF;width:83%;height:30px;font-size:25px;line-height:30px;margin-left:10px;}
+</style>
+<div style="width:100%;height:100%;display:table;"><div style="display:table-cell;vertical-align:middle;">
+	<div class="login-box">
+		<?php if ($success) { ?><div class="success" style="width:460px;margin:auto;"><?php echo $success; ?></div><?php } ?>
+		<?php if ($error_warning || $error_captcha) { ?><div class="warning" style="width:460px;margin:auto;"><?php echo $error_captcha, $error_warning; ?></div><?php } ?>
+		<form action="<?php echo $action; ?>" method="post" onsubmit="pwdChecking(this)" enctype="multipart/form-data" id="form">
+		<div class="login-div">
+			<!--h1 style="text-align:center;font-size:35px;color:#1d8fe9;font-weight:bold;margin:0">智能车载管理平台</h1-->
+			<br /><br />
+			<input type="text" name="username" value="<?php echo $username; ?>" size="26" placeholder="<?php echo $entry_username; ?> " class="user"/>
+			<br /><br />
+			<input type="password" name="password" value="<?php echo $password; ?>" salt="<?php echo $salt; ?>" size="26" placeholder="<?php echo $entry_password; ?> " class="pwd" />
+			<br /><br />
+
+			<?php if (isset($this->session->data['captcha'])) { ?>
+			<input type="text" name="captcha" autocomplete="off" size="8" placeholder="<?php echo $entry_captcha; ?>" class="cpc" style="width:40%;"/>
+			<img src="/common/login/captcha?" onclick="this.src=this.src+1;" style="cursor:pointer;vertical-align:middle;" />
+			<br />
+			<?php } ?>
+
+			<!--a href="<?php echo $forgotten; ?>"><?php echo $text_forgotten; ?></a-->　　
+			<a onclick="$('#form').submit();" class="button"><?php echo $button_login; ?></a>
+			<?php if ($redirect) { ?><input type="hidden" name="redirect" value="<?php echo $redirect; ?>" /><?php } ?>
+		</div>
+		</form>
+	</div>
+</div></div>
+<script type="text/javascript" src="/js/jquery.md5.js"></script>
+<script type="text/javascript"><!--
+function pwdChecking(obj)
+{
+	$(obj).find(':password').each(function ()
+	{
+		var salt = $(this).attr('salt');
+		var pwd = $.md5($(this).val());
+		$(this).val($.md5($.md5($.md5(pwd.substring(0, 9)) + pwd) + salt));
+	});
+}
+
+$('#form input').keydown(function (e)
+{
+	if (e.keyCode == 13) {$('#form').submit();}
+});
+$('#form input[name="username"]').focus();
+//-->
+</script>
+</body>
+</html>

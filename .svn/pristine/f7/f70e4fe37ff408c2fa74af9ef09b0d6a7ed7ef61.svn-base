@@ -1,0 +1,140 @@
+<?php
+class ControllerGprsAbnormal extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_card_abnormal'));
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	/*
+	 * 导出异常卡数据，存为csv文件
+	 */
+	public function export()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_card_abnormal'));
+		$this->registry->model('gprs/card');
+
+		if (!isset($this->request->post['selected']) || empty($this->request->post['selected']))
+		{
+			$this->session->data['error'] = $this->language->get('error_export_selected');
+			$this->registry->redirect($this->url->link('gprs/abnormal'));
+		}
+		elseif ($this->user->hasPermission('modify', 'gprs/abnormal'))
+		{
+			$result = $this->model_gprs_card->get($this->request->get_var('selected', 'a'));
+			if (empty($result))
+			{
+				$this->session->data['error'] = $this->language->get('error_export_selected');
+				$this->registry->redirect($this->url->link('gprs/abnormal'));
+			}
+
+			$str = "ICCID,累计使用流量(MB),当月使用流量(MB),剩余流量(MB),最后更新时间\n";
+			$str = iconv('utf-8', 'gb2312', $str);
+			foreach ($result as $card)
+			{
+				$str .= "\t{$card['card_iccid']},{$card['used_total']},{$card['used_month']},{$card['max_unused']},\t{$card['time_last']}\n";
+			}
+
+			$this->response->addheader('Pragma: public');
+			$this->response->addheader('Expires: 0');
+			$this->response->addheader('Content-Description: File Transfer');
+			$this->response->addheader('Content-Type: text/csv');
+			$this->response->addheader('Content-Disposition: attachment; filename=' . date('Y-m-d_H-i-s', time()) . '_export.csv');
+			$this->response->addheader('Content-Transfer-Encoding: binary');
+
+			return $str;
+		}
+		else
+		{
+			$this->session->data['error'] = $this->language->get('error_permission');
+			$this->registry->redirect($this->url->link('gprs/abnormal'));
+		}
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_card_abnormal'),
+			'href'      => $this->url->link('gprs/abnormal'),
+			'separator' => ' :: '
+		);
+
+		if (isset($this->session->data['error']))
+		{
+			$vrs['error_warning'] = $this->session->data['error'];
+			unset($this->session->data['error']);
+		}
+		else
+		{
+			$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+		}
+
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+		$vrs['export'] = $this->url->link('gprs/abnormal/export');
+
+		/*
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$page                        = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data                        = array(
+			'start'                => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'                => $this->config->get('config_admin_limit'),
+			'filter_org_id'        => $this->request->get_var('filter_org_id', 'i'),
+			'filter_abnormal_days' => $this->request->get_var('filter_abnormal_days', 'i', '', 1)
+		);
+		$vrs['filter_org_id']        = $data['filter_org_id'];
+		$vrs['filter_abnormal_days'] = $data['filter_abnormal_days'];
+
+		$vrs['items'] = $this->model_gprs_card->getItems($data);
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_gprs_card->getItems($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/abnormal', "&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/abnormal.tpl', $vrs);
+	}
+
+}
+?>

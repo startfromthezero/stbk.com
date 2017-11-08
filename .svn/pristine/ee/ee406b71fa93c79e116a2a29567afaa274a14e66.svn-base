@@ -1,0 +1,107 @@
+<?php
+class ControllerGprsSell2pay extends Controller
+{
+	public function index()
+	{
+		$this->registry->language('gprs/paylog');
+		$this->document->setTitle($this->language->get('text_sell2pay'));
+		$this->registry->model('gprs/paylog');
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_sell2pay'),
+			'href'      => $this->url->link('gprs/sell2pay'),
+			'separator' => ' :: '
+		);
+
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$page              = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data              = array(
+			'start'             => ($page - 1) * '10',
+			'limit'             => '10',
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_date_start' => $this->request->get_var('date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('date_end')
+		);
+		$vrs['org_id']     = $data['filter_org_id'];
+		$vrs['date_start'] = $data['filter_date_start'];
+		$vrs['date_end']   = $data['filter_date_end'];
+
+		$sell          = $this->model_gprs_card->getSellCard($data);//获取售卡数量
+		$renewal       = $this->model_gprs_paylog->getRenewal($data);//获取续费数量
+
+		if($sell)
+		{
+			$renewal_chart = $sell_chart = $orgid = $vrs['renewal'] = $vrs['sell_total'] = $vrs['renewal_total'] = $vrs['rate_total'] = array();
+			foreach ($sell as $k => $v)
+			{
+				$renewal[$k] = isset($renewal[$k]) ? $renewal[$k] : 0;
+				array_push($orgid, $vrs['orgs'][$k]);
+				array_push($sell_chart, $v);
+				array_push($renewal_chart, $renewal[$k]);
+				$vrs['renewal'] = $renewal;
+			}
+			/**
+			 * 图表的数据
+			 */
+			$vrs['orgid']         = json_encode($orgid);
+			$vrs['sell_chart']    = json_encode($sell_chart);
+			$vrs['renewal_chart'] = json_encode($renewal_chart);
+			$vrs['color']         = json_encode($this->language->get('arr_color'));
+
+			ksort($vrs['renewal']);
+			$vrs['sell'] = $sell;
+
+			$vrs['sell_total']    = array_sum(array_values($sell));
+			$vrs['renewal_total'] = array_sum(array_values($renewal));
+			$vrs['rate_total']    = round($vrs['renewal_total'] / $vrs['sell_total'] * 100, 2) . '%';
+		}
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+		$url .= isset($this->request->get['date_start']) ? '&date_start=' . $this->request->get['date_start'] : '';
+		$url .= isset($this->request->get['date_end']) ? '&date_end=' . $this->request->get['date_end'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_card->getSellCard($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = '10';
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/sell2pay', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/sell2pay.tpl', $vrs);
+	}
+}
+?>

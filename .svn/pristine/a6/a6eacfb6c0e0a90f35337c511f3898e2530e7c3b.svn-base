@@ -1,0 +1,147 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?>
+		<a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/payment.png" /> <?php echo $heading_title; ?></h1>
+			<?php if($verType == 'ota'){?>
+			<div class="buttons" id="ctrl-div">
+				<?php if ($mpermission) { ?><a href="/setting/ota/add"class="button"><?php echo $button_insert; ?></a><?php } ?>
+			</div>
+			<?php } ?>
+		</div>
+		<div class="content">
+			<div id="tabs" class="htabs">
+				<a href="/setting/ota?verType=ota"<?php if ($verType == 'ota') { ?> class="selected" <?php } ?>><?php echo $text_ota; ?></a>
+				<a href="/setting/ota?verType=devices"<?php if ($verType == 'devices') { ?> class="selected" <?php } ?>><?php echo $text_device_upgrade; ?></a>
+			</div>
+			<script type="text/javascript">$('#tabs a').css('display', 'block');</script>
+			<div class="items-grid">
+				<?php if($verType == 'ota'){ ?>
+				<table class="list">
+					<thead>
+					<tr>
+						<td><?php echo $text_org_name; ?></td>
+						<td><?php echo $text_pack_count; ?></td>
+						<td><?php echo $text_hard_code; ?></td>
+						<td><?php echo $text_soft_code; ?></td>
+						<td><?php echo $text_force_update; ?></td>
+						<td><?php echo $text_issue_time; ?></td>
+						<td><?php echo $text_upgrade_add; ?></td>
+						<td class="right"><?php echo $text_operate; ?></td>
+					</tr>
+					</thead>
+					<tbody>
+					<?php if ($items) { ?>
+					<?php foreach ($items as $item) { ?>
+					<tr>
+						<td><?php echo $item['firstname']; ?></td>
+						<td><?php echo $item['pack_count']; ?></td>
+						<td><?php echo $item['hard_code']; ?></td>
+						<td><?php echo $item['soft_code']; ?></td>
+						<td><?php echo $item['is_forced'] ? '是' : '否'; ?></td>
+						<td><?php echo $item['time_publish']; ?></td>
+						<td><?php echo $item['pack_url']; ?></td>
+						<td class="right">[ <a href="/setting/ota/add?uid=<?php echo $item['org_id']; ?>"><?php echo $button_add; ?></a> ] [ <a href="/setting/ota/details?uid=<?php echo $item['org_id']; ?>"><?php echo $button_versions; ?></a> ]</td>
+					</tr>
+					<?php } ?>
+					<?php } else { ?>
+					<tr>
+						<td class="center" colspan="8"><?php echo $text_no_results; ?></td>
+					</tr>
+					<?php } ?>
+					</tbody>
+				</table>
+				<?php } ?>
+				<?php if($verType == 'devices'){?>
+				<table class="list">
+					<thead>
+					<tr>
+						<td><?php echo $text_device_sn; ?></td>
+						<td><?php echo $text_org_name; ?></td>
+						<td><?php echo $text_hard_code; ?></td>
+						<td><?php echo $text_soft_code; ?></td>
+						<td><?php echo $text_device_ip; ?></td>
+						<td><?php echo $text_device_mac; ?></td>
+						<td><?php echo $text_upgrade_num; ?></td>
+						<td><?php echo $text_first_upgrade; ?></td>
+						<td><?php echo $text_last_upgrade; ?></td>
+					</tr>
+					</thead>
+					<tbody>
+					<tr class="filter center">
+						<td><input type="text" name="device_sn" value="<?php echo $device_sn; ?>" size="8" /></td>
+						<td>
+							<select name="org_id">
+								<option value="*"></option>
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>" <?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td class="left">
+							<a onclick="filter();" class="button"><?php echo $button_filter; ?></a>
+							<a href="/setting/ota?verType=devices" class="button"><?php echo $button_reset; ?></a>
+						</td>
+					</tr>
+					<?php if ($items) { ?>
+					<?php foreach ($items as $item) { ?>
+					<tr>
+						<td><?php echo $item['device_sn']; ?></td>
+						<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : ''; ?></td>
+						<td><?php echo $item['hard_code']; ?></td>
+						<td><?php echo $item['soft_code']; ?></td>
+						<td><?php echo $item['device_ip']; ?></td>
+						<td><?php echo $item['device_mac']; ?></td>
+						<td><?php echo $item['upgrade_count']; ?></td>
+						<td><?php echo $item['added_time']; ?></td>
+						<td><?php echo $item['upgrade_time']; ?></td>
+					</tr>
+					<?php } ?>
+					<?php } else { ?>
+					<tr>
+						<td class="center" colspan="10"><?php echo $text_no_results; ?></td>
+					</tr>
+					<?php } ?>
+					</tbody>
+				</table>
+				<div class="pagination"><?php echo $pagination; ?></div>
+				<?php } ?>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function showDetails(uid)
+{
+	var $url = '/setting/ota/details?uid=' + uid;
+	$.fn.tboxy({title:'版本列表', width:'1000px', value: {type:'url', val:$url}});
+}
+function filter()
+{
+	var url = '/setting/ota?verType=<?php echo $verType;?>';
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += '&org_id=' + encodeURIComponent(org_id);
+	}
+	var device_sn = $('input[name=\'device_sn\']').val();
+	if (device_sn)
+	{
+		url += '&device_sn=' + encodeURIComponent(device_sn);
+	}
+	location = url;
+}
+</script>
+<?php echo $page_footer; ?>

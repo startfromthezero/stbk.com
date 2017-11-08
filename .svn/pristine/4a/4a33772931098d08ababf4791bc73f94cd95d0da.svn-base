@@ -1,0 +1,277 @@
+<?php
+class ControllerGprsAlert extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/alert');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/alert');
+
+		return $this->getList();
+	}
+
+	public function insert()
+	{
+		$this->registry->language('gprs/alert');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/alert');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$data = array(
+				'org_id'      => $this->request->get_var('org_id', 'i'),
+				'alert_value' => $this->request->get_var('alert_value', 'f'),
+				'alert_tpl1'  => $this->request->get_var('alert_tpl1', 'c'),
+				'alert_tpl2'  => $this->request->get_var('alert_tpl2', 'c')
+			);
+			$this->model_gprs_alert->insert($data);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('gprs/alert'));
+		}
+
+		return $this->getForm();
+	}
+
+	public function update()
+	{
+		$this->registry->language('gprs/alert');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/alert');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm())
+		{
+			$this->model_gprs_alert->update($this->request->get['gprs_alert_id'], $this->request->post);
+			$this->session->data['success'] = $this->language->get('text_success');
+			$this->registry->redirect($this->url->link('gprs/alert'));
+		}
+
+		return $this->getForm();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/alert'),
+			'separator' => ' :: '
+		);
+
+		$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+
+		$vrs['insert']  = $this->url->link('gprs/alert/insert');
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$page                 = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data                 = array(
+			'start'  => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'  => $this->config->get('config_admin_limit'),
+			'org_id' => isset($this->request->get['org_id']) ? $this->request->get_var('org_id', 'i') : ''
+		);
+		$vrs['org_id']        = $data['org_id'];
+		$vrs['user_group_id'] = $this->session->data['user_group_id'];
+		$vrs['items']         = $this->model_gprs_alert->getItems($data);
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_gprs_alert->getItems($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/alert', "page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/alert_list.tpl', $vrs);
+	}
+
+	private function getForm()
+	{
+		$vrs                      = $this->language->data;
+		$vrs['error_warning']     = isset($this->error['warning']) ? $this->error['warning'] : '';
+		$vrs['error_alert_value'] = isset($this->error['alert_value']) ? $this->error['alert_value'] : '';
+		$vrs['error_org']         = isset($this->error['org_id']) ? $this->error['org_id'] : '';
+		$vrs['error_alert_tpl1']  = isset($this->error['alert_tpl1']) ? $this->error['alert_tpl1'] : '';
+		$vrs['error_alert_tpl2']  = isset($this->error['alert_tpl2']) ? $this->error['alert_tpl2'] : '';
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/alert'),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs']          = $this->model_user_user->getOrgs();
+		$vrs['user_group_id'] = $this->session->data['user_group_id'];
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+
+		$vrs['cancel'] = $this->url->link('gprs/alert', $url, true);
+
+		if (!isset($this->request->get['gprs_alert_id']))
+		{
+			$vrs['action'] = $this->url->link('gprs/alert/insert', $url, true);
+		}
+		else
+		{
+			$vrs['action'] = $this->url->link('gprs/alert/update', 'gprs_alert_id=' . $this->request->get['gprs_alert_id'] . $url, true);
+		}
+		if (isset($this->request->get['gprs_alert_id']))
+		{
+			$alert_info = $this->model_gprs_alert->get($this->request->get_var('gprs_alert_id', 'i'));
+		}
+
+		$vrs['gprs_alert_id'] = isset($this->request->get['gprs_alert_id']) ? $this->request->get['gprs_alert_id'] : 0;
+
+		if (isset($this->request->post['org_id']))
+		{
+			$vrs['org_id'] = $this->request->post['org_id'];
+		}
+		elseif (!empty($alert_info))
+		{
+			$vrs['org_id'] = $alert_info['org_id'];
+		}
+		else
+		{
+			$vrs['org_id'] = '';
+		}
+
+		if (isset($this->request->post['alert_value']))
+		{
+			$vrs['alert_value'] = $this->request->post['alert_value'];
+		}
+		elseif (!empty($alert_info))
+		{
+			$vrs['alert_value'] = $alert_info['alert_value'];
+		}
+		else
+		{
+			$vrs['alert_value'] = '';
+		}
+
+		if (isset($this->request->post['alert_tpl1']))
+		{
+			$vrs['alert_tpl1'] = $this->request->post['alert_tpl1'];
+		}
+		elseif (!empty($alert_info))
+		{
+			$vrs['alert_tpl1'] = $alert_info['alert_tpl1'];
+		}
+		else
+		{
+			$vrs['alert_tpl1'] = $this->language->get('text_alert_notice');
+		}
+
+		if (isset($this->request->post['alert_tpl2']))
+		{
+			$vrs['alert_tpl2'] = $this->request->post['alert_tpl2'];
+		}
+		elseif (!empty($alert_info))
+		{
+			$vrs['alert_tpl2'] = $alert_info['alert_tpl2'];
+		}
+		else
+		{
+			$vrs['alert_tpl2'] = $this->language->get('text_finish_notice');
+		}
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/alert_form.tpl', $vrs);
+	}
+
+	private function validateForm()
+	{
+		if (!$this->user->hasPermission('modify', 'gprs/alert'))
+		{
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		if (!isset($this->request->get['gprs_alert_id']))
+		{
+			$org_id = $this->model_gprs_alert->getOrgId($this->request->post['org_id']);
+			if (!isset($this->request->get['org_id']))
+			{
+				if ($org_id)
+				{
+					$this->error['warning'] = $this->language->get('error_exists');
+				}
+			}
+			else
+			{
+				if ($org_id && ($this->request->get['org_id'] != $org_id['org_id']))
+				{
+					$this->error['warning'] = $this->language->get('error_exists');
+				}
+			}
+		}
+
+		if ($this->request->get_var('alert_value', 'f') <= 0)
+		{
+			$this->error['alert_value'] = $this->language->get('error_alert_value');
+		}
+		if ((mb_strlen($this->request->post['alert_tpl1']) < 3) || (mb_strlen($this->request->post['alert_tpl1']) > 128))
+		{
+			$this->error['alert_tpl1'] = $this->language->get('error_alert_tpl1');
+		}
+		if ((mb_strlen($this->request->post['alert_tpl2']) < 3) || (mb_strlen($this->request->post['alert_tpl2']) > 128))
+		{
+			$this->error['alert_tpl1'] = $this->language->get('error_alert_tpl1');
+		}
+
+		return !$this->error;
+	}
+
+}
+?>

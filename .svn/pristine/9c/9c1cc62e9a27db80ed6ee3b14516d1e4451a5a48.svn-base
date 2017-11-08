@@ -1,0 +1,239 @@
+<?php
+/**
+ * 公共控制类与函数
+ */
+class modules_public extends Controller
+{
+	/**
+	 * @var array 错误数组
+	 */
+	protected $_error = array();
+
+	protected $_org_id = 0;  //所属机构编号
+
+	private $_partner_key;   //所属机构密钥
+
+	private $_notify_url;    //机构通知API地址
+
+	/**
+	 * 页头
+	 *
+	 * @return string html
+	 */
+	public function top()
+	{
+		$vrs['base']        = HTTP_STORE;
+		$vrs['title']       = $this->document->getTitle();
+		$vrs['description'] = $this->document->getDescription();
+		$vrs['keywords']    = $this->document->getKeywords();
+		$vrs['links']       = $this->document->getLinks();
+		$vrs['styles']      = $this->document->getStyles();
+		$vrs['scripts']     = $this->document->getScripts();
+		$vrs['icon']        = ($this->config->get('config_icon') && file_exists(DIR_SITE . '/' . IMAGES_PATH . $this->config->get('config_icon'))) ? $this->registry->execdn($this->config->get('config_icon'), IMAGES_PATH) : '';
+
+		$callback = array(
+			&$this,
+			'checkcdn'
+		);
+		$pattern  = '/ (src|href)=(\'|")([\d\w_\/\.\-]+\.(jpg|png|gif|css|js)\??[\d\w_\.\-\;\&\=]*)(\'|")/i';
+		$content  = preg_replace_callback($pattern, $callback, $this->view('template/app/header.tpl', $vrs));
+
+		return $content;
+	}
+
+	/**
+	 * 页尾
+	 *
+	 * @return string html
+	 */
+	public function bottom()
+	{
+		$vrs['base'] = HTTP_STORE;
+
+		return $this->view('template/app/footer.tpl', $vrs);
+	}
+
+	/**
+	 * 检测是否需要CDN处理
+	 *
+	 * @param array $m
+	 * @return string 组合好的CDN地址
+	 */
+	protected function checkcdn($m)
+	{
+		return " {$m[1]}={$m[2]}" . $this->registry->execdn($m[3], '', ".{$m[4]}") . $m[5];
+	}
+
+	/*
+	 * 错误信息提示页面
+	 */
+	protected function _msg($msg, $url = '', $msgbtn = '')
+	{
+		$vrs['msg'] = $msg;
+		$vrs['url'] = $url;
+		if ($this->checkWeixin())
+		{
+			$wechat       = new modules_wechat();
+			$vrs['jsapi'] = $wechat->getJsapiParameters();
+		}
+
+		$this->document->setTitle($this->language->get('text_sysmsg'));
+		$vrs['text_msgbtn'] = !empty($msgbtn) ? $msgbtn : $this->language->get('button_back');
+		$vrs['text_sysmsg'] = $this->language->get('text_sysmsg');
+		$vrs['page_footer'] = $this->mem_ctrl('app/wxpay/bottom');
+		$vrs['page_header'] = $this->registry->exectrl('app/wxpay/top');
+
+		return $this->view('template/app/msg.tpl', $vrs);
+	}
+
+	/**
+	 * 判断是否在微信中访问
+	 */
+	protected function checkWeixin()
+	{
+		if (stripos($this->request->server['HTTP_USER_AGENT'], 'MicroMessenger') === false)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * 检查ICCID是否已登录
+	 */
+	protected function checkLogin()
+	{
+		if (isset($this->request->get['iccid']))
+		{
+			$this->checkToken();
+			$iccid = $this->login($this->request->get_var('iccid'));
+		}
+		elseif (isset($this->session->data['iccid']))
+		{
+			$iccid = $this->login($this->session->data['iccid']);
+		}
+
+		if (empty($iccid))
+		{
+			$error_text = isset($this->request->get['iccid']) ? $this->language->get('text_no_iccid') : $this->language->get('text_login_timeout');
+			echo $this->_msg($error_text);
+			exit;
+		}
+
+		return $iccid;
+	}
+
+	/**
+	 * 机构token校验
+	 */
+	protected function checkToken()
+	{
+		/**
+		 * 校验时间戳为系统当前时间前后15分钟以内才有效
+		 */
+		$timestamp = $this->request->get_var('timestamp', 'i', '', time());
+		if ($timestamp < (time() - 60 * 15) || $timestamp > (time() + 60 * 15))
+		{
+			$result = array(
+				'status' => 0,
+				'msg'    => 'timestamp error'
+			);
+			exit(json_encode($result));
+		}
+
+		/**
+		 * 所属机构查询
+		 */
+		$partner_id = trim($this->request->get_var('partner_id'));
+		$org_info   = $this->mem_sql("SELECT * FROM cc_org WHERE partner_id = '{$partner_id}'");
+		if (empty($org_info))
+		{
+			$result = array(
+				'status' => 0,
+				'msg'    => 'partner_id error'
+			);
+			exit(json_encode($result));
+		}
+		$this->_org_id      = $org_info['org_id'];
+		$this->_partner_key = $org_info['partner_key'];
+		$this->_notify_url     = $org_info['notify_url'];
+
+		/**
+		 * 校验密码安全
+		 */
+		$vtoken = md5($org_info['partner_key'] . date('dHYm', $timestamp));//MD5(机构密钥+2位数日+2位数时+4位数年+2位数月份)
+		if ($vtoken != $this->request->get_var('token'))
+		{
+			$result = array(
+				'status' => 0,
+				'msg'    => 'signature error'
+			);
+			exit(json_encode($result));
+		}
+	}
+
+	/**
+	 * ICCID登录
+	 *
+	 * @param $iccid
+	 * @return bool
+	 */
+	protected function login($iccid)
+	{
+		$card_info = $this->mem_sql("SELECT * FROM cc_gprs_card WHERE card_iccid = '{$iccid}'", DB_GET_ROW);
+		if (empty($card_info))
+		{
+			return false;
+		}
+		$this->session->data['iccid'] = $iccid;
+
+		/**
+		 * 初始化流量卡所属机构信息
+		 */
+		$org_info = $this->mem_sql("SELECT * FROM cc_org WHERE org_id = '{$card_info['org_id']}'", DB_GET_ROW);
+		if (empty($org_info))
+		{
+			return false;
+		}
+		$this->_org_id      = $org_info['org_id'];
+		$this->_partner_key = $org_info['partner_key'];
+		$this->_notify_url     = $org_info['notify_url'];
+
+		return $iccid;
+	}
+
+	private function logout()
+	{
+		unset($this->session->data['iccid']);
+	}
+
+	/**
+	 * 机构消息通知
+	 *
+	 * @param string $iccid 流量卡ICCID
+	 * @param string $cmd   要执行的命令
+	 * @param array  $data  要执行的命令的附加数据
+	 * @return bool
+	 */
+	protected function notifyCmd($iccid, $cmd, $data = array())
+	{
+		$data['timestamp'] = time();
+		$data['cmd']       = $cmd;
+		$data['token']     = md5($cmd . date('dHYm') . $this->_partner_key);
+		$data['iccid']     = $iccid;
+		$result            = $this->curl($this->_notify_url, $data, true);
+
+		/**
+		 * 记录日志
+		 */
+		if (ini_get('display_errors'))
+		{
+			file_put_contents(DIR_ROOT . '/system/logs/org-notify.log', date('Y-m-d H:i:s') . " - {$iccid}\n" . var_export($result, true) . "\n\n", FILE_APPEND);
+		}
+
+		return true;
+	}
+
+}
+?>

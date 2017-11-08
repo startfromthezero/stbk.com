@@ -1,0 +1,84 @@
+<?php
+class ModelLocalisationNation extends Model
+{
+	private $_opt = 'cc_nation';
+	private $_arr = array();
+
+	public function addNation($data)
+	{
+		return $this->mdb()->insert($this->_opt, $data);
+	}
+
+	public function editNation($data)
+	{
+		return $this->mdb()->update($this->_opt, $data, "ntid = '{$data['ntid']}'");
+	}
+
+	public function deleteNation($ntid)
+	{
+		return $this->mdb()->del($this->_opt, "ntid = {$ntid}");
+	}
+
+	public function getEdit($ntid)
+	{
+		return $this->sdb()->fetch_row("SELECT DISTINCT * FROM {$this->_opt} WHERE ntid = '{$ntid}'");
+	}
+
+	public function getNtname($ntname)
+	{
+		return $this->sdb()->fetch_row("SELECT DISTINCT * FROM {$this->_opt} WHERE ntname = '{$ntname}'");
+	}
+
+	public function getNation($ntid)
+	{
+		$sql = "SELECT * FROM {$this->_opt} WHERE ntid = '{$ntid}'";
+		$res = $this->sdb()->fetch_row($sql);
+		if ($res)
+		{
+			$this->_arr[] = $res;
+			$this->getNation($res['parent']);
+		}
+
+		return $this->_arr;
+	}
+
+	/**
+	 * 获取国家信息
+	 */
+	public function getNations($data = array())
+	{
+		$sql       = "SELECT * FROM {$this->_opt} WHERE parent = {$data['ntid']}";
+		$sort_data = array(
+			'ntname',
+			'zipcode'
+		);
+
+		if (isset($data['sort']) && in_array($data['sort'], $sort_data))
+		{
+			$sql .= " ORDER BY {$data['sort']}";
+		}
+		else
+		{
+			$sql .= " ORDER BY ntname";
+		}
+
+		$sql .= (isset($data['order']) && ($data['order'] == 'DESC')) ? ' DESC' : ' ASC';
+
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	public function getTotalNations($data = array())
+	{
+		$row = $this->sdb()->fetch_row("SELECT COUNT(*) AS total FROM {$this->_opt} WHERE parent = {$data['ntid']}");
+
+		return $row['total'];
+	}
+}
+?>

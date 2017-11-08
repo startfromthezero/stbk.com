@@ -1,0 +1,54 @@
+<?php
+class ModelAppPack extends Model
+{
+	/**
+	 * @var string 此库要操作的表
+	 */
+	private $_opt = 'cc_gprs_pack';
+
+	/*
+	 * 获取所属机构流量套餐
+	 *
+	 * @param int $user_id
+	 * @return array mixed	流量套餐记录
+	 */
+	public function getPackList($org_id)
+	{
+		$sql = "SELECT * FROM {$this->_opt} WHERE org_id = '{$org_id}' AND gprs_status = 1 ORDER BY gprs_amount";
+		$res = $this->sdb()->fetch_all($sql);
+		if (empty($res))
+		{
+			$res = $this->sdb()->fetch_all("SELECT * FROM {$this->_opt} WHERE org_id = 0 AND gprs_status = 1 ORDER BY gprs_amount");
+		}
+
+		return $res;
+	}
+
+	/*
+	 * 获取充值套餐信息
+	 *
+	 * @param int $pack_id
+	 * @param int $org_id
+	 * @return array mixed	套餐信息
+	 */
+	public function getPack($pack_id, $org_id)
+	{
+		$sql = "SELECT * FROM {$this->_opt} WHERE pack_id = '{$pack_id}' AND (org_id = '{$org_id}' OR org_id = 0) AND gprs_status = 1";
+
+		return $this->sdb()->fetch_row($sql);
+	}
+
+	/**
+	 * 获取ICCID卡的充值套装分配信息
+	 */
+	public function getPackInfo($card_id)
+	{
+		$month = date('Ym');
+		$sql   = "SELECT GA.*, GV.* FROM `cc_gprs_value` GV
+		INNER JOIN cc_gprs_allot GA ON GA.`allot_id` = GV.allot_id
+		WHERE GV.card_id = '{$card_id}' and GV.how_month = '{$month}'";
+
+		return $this->sdb()->fetch_all($sql);
+	}
+}
+?>

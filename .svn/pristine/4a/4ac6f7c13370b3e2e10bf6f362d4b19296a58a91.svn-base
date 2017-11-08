@@ -1,0 +1,5 @@
+SELECT * FROM `cc_gprs_card` WHERE card_iccid='898606150100000693';
+SELECT * FROM `cc_gprs_card` WHERE card_iccid LIKE '%8986011670901081969%';
+
+-- 支付流量卡更新机构所属
+UPDATE `cc_gprs_pay` P, `cc_gprs_card` C SET P.`org_id` = C.`org_id` WHERE P.`card_id` = C.`card_id`

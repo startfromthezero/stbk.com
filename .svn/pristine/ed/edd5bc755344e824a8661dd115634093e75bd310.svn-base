@@ -1,0 +1,59 @@
+<?php
+/**
+ * 公共类函数
+ */
+class modules_funs
+{
+	/**
+	 * 获取完整的URL地址
+	 *
+	 * @param stgring $url URL地址
+	 * @return string 完整URL地址
+	 */
+	public static function getFullUrl($url)
+	{
+		if (empty($url))
+		{
+			return '';
+		}
+
+		if (strpos($url, '://') === false)
+		{
+			$url = OSS_IMG_DOMAIN . $url;
+		}
+		else
+		{
+			$url .= '?';
+		}
+
+		return $url;
+	}
+
+	/**
+	 * 流量值自动单位转换
+	 *
+	 * @param float $gprs 流量值
+	 * @return string 带单位流量值
+	 */
+	public static function gpgsFormat($gprs)
+	{
+		$GB = 1024;
+		$TB = 1024 * 1024;
+
+		if (abs($gprs) < $GB)
+		{
+			$gprs = round($gprs, 2) . '<b style="color:#008000"> M</b>';
+		}
+		else if (abs($gprs) >= $GB && $gprs < $TB)
+		{
+			$gprs = round($gprs / $GB, 2) . '<b style="color:#0000FF"> G</b>';
+		}
+		else if (abs($gprs) >= $TB)
+		{
+			$gprs = round($gprs / $TB, 2) . '<b style="color:#FF0000"> T</b>';
+		}
+
+		return $gprs;
+	}
+}
+?>

@@ -1,0 +1,71 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?><div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/download.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<?php if ($mpermission) { ?><a onclick="if(confirm('请确认输入内容无误！')){ $('#form').submit()}" class="button btn-green" id="save_once"><?php echo $button_save; ?></a><?php } ?>
+				<a href="<?php echo $cancel; ?>" class="button btn-darkblue"><?php echo $button_cancel; ?></a>
+			</div>
+		</div>
+		<div class="content">
+			<form action="<?php echo $action; ?>" method="post" enctype="multipart/form-data" id="form">
+				<table class="form">
+					<tr>
+						<td><span class="required">*</span><?php echo $text_gprs_user; ?>：</td>
+						<td>
+							<select name="gprs_user">
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"<?php if ($k == $gprs_user) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+							<?php if ($error_gprs_user) { ?><span class="error"><?php echo $error_gprs_user; ?></span><?php } ?>
+						</td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $text_zck_value; ?>（元）：<span class="help"><?php echo $notice_decimal; ?></span></td>
+						<td><input type="text" maxlength="8" name="zck_value" value="<?php echo $zck_value; ?>" /><?php if ($error_zck_value) { ?><span class="error"><?php echo $error_zck_value; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $text_zck_gprs; ?>（MB）：<span class="help"><?php echo $notice_decimal; ?></span></td>
+						<td><input type="text" maxlength="8" name="zck_gprs" value="<?php echo $zck_gprs; ?>" /><?php if ($error_zck_gprs) { ?><span class="error"><?php echo $error_zck_gprs; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><?php echo $text_time_expire; ?>：</td>
+						<td><input type="text" name="time_expire" value="<?php echo $time_expire; ?>" id="time_expire" /><?php if ($error_time_expire) { ?><span class="error"><?php echo $error_time_expire; ?></span><?php } ?></td>
+					</tr>
+					<tr>
+						<td><span class="required">*</span><?php echo $text_live_month; ?>：<span class="help"><?php echo $text_hint; ?></span></td>
+						<td>
+							<select name="live_month">
+								<?php foreach ($arr_live_month as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><?php echo $text_how_czk; ?>：<span class="help"><?php echo $note_most_num; ?></span></td>
+						<td><input type="text" name="how_czk" value="<?php echo $how_czk; ?>" /><?php if ($error_how_czk) { ?><span class="error"><?php echo $error_how_czk; ?></span><?php } ?></td>
+					</tr>
+				</table>
+			</form>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+$('#time_expire').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, minDate: 0
+});
+$('#save_once').one('click', function ()
+{
+	$(this).attr('onclick', '');
+});
+</script>
+<?php echo $page_footer; ?>

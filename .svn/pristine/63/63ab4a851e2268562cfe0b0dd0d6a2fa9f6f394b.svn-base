@@ -1,0 +1,133 @@
+<?php
+class ControllerGprsCardUsed extends Controller
+{
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_gprs_card_used'));
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_gprs_card_used'),
+			'href'      => $this->url->link('gprs/card_used'),
+			'separator' => ' :: '
+		);
+
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $orgs = $this->model_user_user->getOrgs();
+
+		$vrs['page'] = $page  = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data              = array(
+			'start'             => ($page - 1) * '10',
+			'limit'             => '10',
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_date_start' => $this->request->get_var('date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('date_end')
+		);
+		$vrs['org_id']     = $data['filter_org_id'];
+		$vrs['date_start'] = $data['filter_date_start'];
+		$vrs['date_end']   = $data['filter_date_end'];
+
+		$vrs['card_used']  = $this->model_gprs_card->getCardUsed($data);
+		$subtotal         = $this->model_gprs_card->getCardUsed($data, '', '', true);
+		$vrs['subtotal']  = $subtotal[0];
+		unset($data['start'], $data['limit']);
+		$total        = $this->model_gprs_card->getCardUsed($data, '', true);
+		$vrs['total'] = $total[0];
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+		$url .= isset($this->request->get['date_start']) ? '&date_start=' . $this->request->get['date_start'] : '';
+		$url .= isset($this->request->get['date_end']) ? '&date_end=' . $this->request->get['date_end'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_card->getCardUsed($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = '10';
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/card_used', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/card_used.tpl', $vrs);
+	}
+
+	/**
+	 * 机构充值记录统计图表
+	 */
+	public function chart()
+	{
+		$this->registry->language('gprs/card');
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$orgs = $this->model_user_user->getOrgs();
+
+		$changeId = $this->request->get_var('changeId');
+		$changeId = $changeId ? $changeId : 1;
+		$page              = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data              = array(
+			'start'             => ($page - 1) * '10',
+			'limit'             => '10',
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_date_start' => $this->request->get_var('date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('date_end')
+		);
+
+		$this->registry->model('gprs/card');
+		$card_used = $this->model_gprs_card->getCardUsed($data);
+
+		/**
+		 * 流量卡统计图表
+		 */
+		$org          = $activated = $not_activated = array();
+		$unused_count = $used_count = array();
+		foreach ($card_used as $v)
+		{
+			$org[]           = $orgs[$v['org_id']];
+			$activated[]     = (int)$v['activated'];
+			$not_activated[] = $v['card_count'] - $v['activated'];
+			$unused_count[]  = (int)$v['unused_count'];
+			$used_count[]    = (int)$v['used_count'];
+		}
+
+		$vrs['org']           = json_encode($org);
+		$vrs['activated']     = json_encode($activated);
+		$vrs['not_activated'] = json_encode($not_activated);
+		$vrs['unused_count']  = json_encode($unused_count);
+		$vrs['used_count']    = json_encode($used_count);
+
+		return $this->view("template/gprs/card_used_chart{$changeId}.tpl", $vrs);
+	}
+}
+?>

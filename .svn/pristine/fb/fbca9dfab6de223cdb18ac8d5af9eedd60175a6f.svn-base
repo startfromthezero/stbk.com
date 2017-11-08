@@ -1,0 +1,213 @@
+<?php
+class ControllerGprsUnicomStat extends Controller
+{
+	private $error = array();
+	private $_limit = 10;
+
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_gprs_unicom_stat'));
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	/**
+	 * 流量值自动单位转换
+	 *
+	 * @param float $gprs 流量值
+	 * @return string 带单位流量值
+	 */
+	private function _gpgsFormat($gprs)
+	{
+		$GB = 1024;
+		$TB = 1024 * 1024;
+
+		if (abs($gprs) < $GB)
+		{
+			$gprs = round($gprs, 2) . 'M';
+		}
+		else if (abs($gprs) >= $GB && $gprs < $TB)
+		{
+			$gprs = round($gprs / $GB, 2) . 'G';
+		}
+		else if (abs($gprs) >= $TB)
+		{
+			$gprs = round($gprs / $TB, 2) . 'T';
+		}
+
+		return $gprs;
+	}
+
+	/**
+	 *导出月使用流量统计
+	 *
+	 * @return string
+	 */
+	public function export()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_gprs_unicom_stat'));
+		$this->registry->model('gprs/card');
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$orgs = $this->model_user_user->getOrgs();
+
+		if ($this->user->hasPermission('modify', 'gprs/unicom_stat'))
+		{
+			$data = array(
+				'filter_org_id' => $this->request->get_var('org_id', 'i'),
+			);
+
+			$items = $this->model_gprs_card->getUnicomStat($data);
+			if (empty($items))
+			{
+				/**
+				 * 连接组合处理
+				 */
+				$url = '';
+				$url .= isset($this->request->post['org_id']) ? '&org_id=' . $this->request->post['org_id'] : '';
+
+				$this->session->data['error'] = $this->language->get('error_export_empty');
+				$this->registry->redirect($this->url->link('gprs/unicom_stat', $url, true));
+			}
+
+			$str = "机构名称,售卡数量,未激活数量,未激活率,已激活数量,已激活率,使用总流量,月使用流量\n";
+			foreach ($items as $item)
+			{
+				$nonactivated_rate = round($item['nonactivated'] / $item['card_count'] * 100, 2) . '%';
+				$activated_rate    = round($item['activated'] / $item['card_count'] * 100, 2) . '%';
+				$unicom_count      = $this->_gpgsFormat($item['unicom_count']);
+				$month_count       = $this->_gpgsFormat($item['month_count']);
+				$str .= "{$orgs[$item['org_id']]},{$item['card_count']},{$item['nonactivated']},{$nonactivated_rate},{$item['activated']},{$activated_rate},{$unicom_count},{$month_count}\n";
+			}
+
+			$total             = $this->model_gprs_card->getUnicomStat($data, '', true);
+			$total             = $total[0];
+			$nonactivated_rate = round($total['nonactivated'] / $total['card_count'] * 100, 2) . '%';
+			$activated_rate    = round($total['activated'] / $total['card_count'] * 100, 2) . '%';
+			$unicom_count      = $this->_gpgsFormat($total['unicom_count']);
+			$month_count       = $this->_gpgsFormat($total['month_count']);
+
+			$str .= "总计,{$total['card_count']},{$total['nonactivated']},{$nonactivated_rate},{$total['activated']},{$activated_rate},{$unicom_count},{$month_count}";
+
+			$this->response->addheader('Pragma: public');
+			$this->response->addheader('Expires: 0');
+			$this->response->addheader('Content-Description: File Transfer');
+			$this->response->addheader('Content-Type: text/csv');
+			$this->response->addheader('Content-Disposition: attachment; filename=' . date('Y-m-d_H-i-s', time()) . '_export.csv');
+			$this->response->addheader('Content-Transfer-Encoding: binary');
+
+			return iconv('utf-8', 'gb2312', $str);
+		}
+		else
+		{
+			$this->session->data['error'] = $this->language->get('error_permission');
+			$this->registry->redirect($this->url->link('gprs/unicom_stat'));
+		}
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_gprs_unicom_stat'),
+			'href'      => $this->url->link('gprs/unicom_stat'),
+			'separator' => ' :: '
+		);
+
+		if (isset($this->session->data['error']))
+		{
+			$vrs['error_warning'] = $this->session->data['error'];
+			unset($this->session->data['error']);
+		}
+		else
+		{
+			$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+		}
+
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+		$vrs['export'] = $this->url->link('gprs/unicom_stat/export');
+
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $orgs = $this->model_user_user->getOrgs();
+
+		$vrs['page']   = $page = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data          = array(
+			'start'         => ($page - 1) * $this->_limit,
+			'limit'         => $this->_limit,
+			'filter_org_id' => $this->request->get_var('org_id', 'i'),
+		);
+		$vrs['org_id'] = $data['filter_org_id'];
+
+		$vrs['unicom_stat'] = $unicom_stat = $this->model_gprs_card->getUnicomStat($data);
+		$subtotal           = $this->model_gprs_card->getUnicomStat($data, '', '', true);
+		$vrs['subtotal']    = $subtotal[0];
+		unset($data['start'], $data['limit']);
+		$total        = $this->model_gprs_card->getUnicomStat($data, '', true);
+		$vrs['total'] = $total[0];
+
+		/**
+		 * 流量卡统计图表
+		 */
+		$org = $activated = $nonactivated = array();
+		foreach ($unicom_stat as $v)
+		{
+			$org[]          = $orgs[$v['org_id']];
+			$activated[]    = (int)$v['activated'];
+			$nonactivated[] = (int)$v['nonactivated'];
+		}
+
+		$vrs['org']          = json_encode($org);
+		$vrs['activated']    = json_encode($activated);
+		$vrs['nonactivated'] = json_encode($nonactivated);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_card->getUnicomStat($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = $this->_limit;
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/unicom_stat', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/unicom_stat.tpl', $vrs);
+	}
+}
+?>

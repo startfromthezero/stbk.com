@@ -1,0 +1,37 @@
+<?php
+// gprs
+$_['gprs/card']         = '业务管理-流量卡管理';
+$_['gprs/pack']         = '业务管理-充值套餐设置';
+$_['gprs/czk']          = '业务管理-充值卡管理';
+$_['gprs/batch']        = '业务管理-流量卡批次管理';
+$_['gprs/alert']        = '业务管理-流量预警设置';
+$_['gprs/report']       = '财务管理-充值总额统计';
+$_['gprs/month_report'] = '财务管理-充值月度统计';
+$_['gprs/paylog']       = '财务管理-充值明细统计';
+$_['gprs/pay_report']   = '财务管理-机构充值统计';
+$_['gprs/sell2pay']     = '财务管理-售卡续费统计';
+$_['gprs/abnormal']     = '统计分析-流量卡异常统计';
+$_['gprs/stats']        = '统计分析-月流量使用统计';
+$_['gprs/halt']         = '统计分析-停号流量卡统计';
+$_['gprs/pay_pack']     = '统计分析-流量卡套餐统计';
+
+//setting
+$_['setting/setting'] = '系统设置';
+$_['setting/store']   = '系统设置-系统设置';
+$_['setting/ota']     = '系统设置-OTA升级';
+$_['tool/backup']     = '系统设置-数据维护';
+$_['tool/error_log']  = '系统设置-错误日志';
+$_['tool/memcache']   = '系统设置-缓冲管理';
+
+$_['localisation/nation']   = '参数设置-国家区域';
+$_['localisation/currency'] = '参数设置-货币设置';
+$_['localisation/language'] = '参数设置-语言设置';
+
+$_['extension/payment'] = '扩展功能-支付管理';
+$_['payment/wxpay']     = '支付管理-微信支付';
+$_['payment/alipay']    = '支付管理-支付宝';
+
+$_['user/user']            = '机构管理-用户管理';
+$_['user/org']             = '机构管理-机构管理';
+$_['user/user_permission'] = '机构管理-权限设置';
+?>

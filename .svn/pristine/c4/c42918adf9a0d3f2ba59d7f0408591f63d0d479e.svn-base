@@ -1,0 +1,8 @@
+SELECT * FROM `cc_gprs_card` WHERE card_iccid='898606150100000693';
+SELECT * FROM `cc_gprs_card` WHERE card_iccid LIKE '%8986011670901081969%';
+
+-- 支付流量卡更新机构所属
+UPDATE `cc_gprs_pay` P, `cc_gprs_card` C SET P.`org_id` = C.`org_id` WHERE P.`card_id` = C.`card_id`
+
+-- 查询联通使用总流量 > 2G + 充值总流量，
+SELECT O.name AS 机构名称,C.card_sn AS 卡号,C.card_iccid AS 卡ICCID,C.used_total AS 平台统计使用总流量,C.pay_total AS 充值流量,C.unicom_total AS 联通统计使用总流量,C.unicom_stop AS 卡状态,C.time_added AS 激活时间,C.time_last AS 最后更新时间 FROM `cc_gprs_card` C LEFT JOIN `cc_org` O ON O.`org_id` = C.`org_id` WHERE unicom_total > (pay_total + 2048)

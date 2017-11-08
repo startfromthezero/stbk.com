@@ -1,0 +1,10 @@
+<?php echo $page_header; ?>
+<img src="/img/app/gprs-head.jpg" />
+<div class="body">
+	<h1 style="font-size:90px;text-align:center;border:none;line-height:20px">
+		<b>404</b>
+	</h1>
+	<p align="center"><?php echo $text_error; ?></p><br/><br/>
+	<a class="button btn-blue" href="javascript:history.back()"><?php echo $button_back; ?></a>
+</div>
+<?php echo $page_footer; ?>

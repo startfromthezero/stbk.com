@@ -1,0 +1,58 @@
+<?php
+class ControllerGprsPayPack extends Controller
+{
+	public function index()
+	{
+		$this->registry->language('gprs/paylog');
+		$this->document->setTitle($this->language->get('text_pay_pack'));
+		$this->registry->model('gprs/paylog');
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_pay_pack'),
+			'href'      => $this->url->link('gprs/pay_pack'),
+			'separator' => ' :: '
+		);
+
+		$this->registry->model('user/user');
+		$vrs['orgs']              = $this->model_user_user->getOrgs();
+		$data                     = array(
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_pay_method' => $this->request->get_var('pay_method', 'i'),
+			'filter_date_start' => $this->request->get_var('filter_date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('filter_date_end'),
+		);
+		$vrs['org_id']            = $data['filter_org_id'];
+		$vrs['pay_method']        = $data['filter_pay_method'];
+		$vrs['filter_date_start'] = $data['filter_date_start'];
+		$vrs['filter_date_end']   = $data['filter_date_end'];
+		$vrs['items']             = $this->model_gprs_paylog->getPayPack($data);
+		$total                    = $this->model_gprs_paylog->getPayPack($data, true);
+		$vrs['total']             = $total[0];
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/pay_pack.tpl', $vrs);
+	}
+}
+?>

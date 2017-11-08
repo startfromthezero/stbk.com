@@ -1,0 +1,50 @@
+2017-11-06 23:26:28 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 15
+2017-11-06 23:26:28 - PHP Notice:  Undefined variable: text_news in E:\stbk\src\admin\view\template\home.tpl on line 86
+2017-11-06 23:26:28 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:26:28 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:26:28 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:26:28 - PHP Notice:  Undefined variable: user_permission in E:\stbk\src\admin\view\template\home.tpl on line 90
+2017-11-06 23:26:28 - PHP Notice:  Undefined variable: text_user_permission in E:\stbk\src\admin\view\template\home.tpl on line 92
+2017-11-06 23:52:46 - PHP Notice:  Undefined index: org_id in E:\stbk\src\system\library\user.php on line 83
+2017-11-06 23:52:46 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 15
+2017-11-06 23:52:46 - PHP Notice:  Undefined variable: text_news in E:\stbk\src\admin\view\template\home.tpl on line 86
+2017-11-06 23:52:46 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:52:46 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:52:46 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:52:46 - PHP Notice:  Undefined variable: user_permission in E:\stbk\src\admin\view\template\home.tpl on line 90
+2017-11-06 23:52:46 - PHP Notice:  Undefined variable: text_user_permission in E:\stbk\src\admin\view\template\home.tpl on line 92
+2017-11-06 23:53:30 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 15
+2017-11-06 23:53:30 - PHP Notice:  Undefined variable: text_news in E:\stbk\src\admin\view\template\home.tpl on line 86
+2017-11-06 23:53:30 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:30 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:30 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:30 - PHP Notice:  Undefined variable: user_permission in E:\stbk\src\admin\view\template\home.tpl on line 90
+2017-11-06 23:53:30 - PHP Notice:  Undefined variable: text_user_permission in E:\stbk\src\admin\view\template\home.tpl on line 92
+2017-11-06 23:53:31 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 15
+2017-11-06 23:53:31 - PHP Notice:  Undefined variable: text_news in E:\stbk\src\admin\view\template\home.tpl on line 86
+2017-11-06 23:53:31 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:31 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:31 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:31 - PHP Notice:  Undefined variable: user_permission in E:\stbk\src\admin\view\template\home.tpl on line 90
+2017-11-06 23:53:31 - PHP Notice:  Undefined variable: text_user_permission in E:\stbk\src\admin\view\template\home.tpl on line 92
+2017-11-06 23:53:45 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 15
+2017-11-06 23:53:45 - PHP Notice:  Undefined variable: text_news in E:\stbk\src\admin\view\template\home.tpl on line 86
+2017-11-06 23:53:45 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:45 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:45 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:45 - PHP Notice:  Undefined variable: user_permission in E:\stbk\src\admin\view\template\home.tpl on line 90
+2017-11-06 23:53:45 - PHP Notice:  Undefined variable: text_user_permission in E:\stbk\src\admin\view\template\home.tpl on line 92
+2017-11-06 23:53:49 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 15
+2017-11-06 23:53:49 - PHP Notice:  Undefined variable: text_news in E:\stbk\src\admin\view\template\home.tpl on line 86
+2017-11-06 23:53:49 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:49 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:49 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:49 - PHP Notice:  Undefined variable: user_permission in E:\stbk\src\admin\view\template\home.tpl on line 90
+2017-11-06 23:53:49 - PHP Notice:  Undefined variable: text_user_permission in E:\stbk\src\admin\view\template\home.tpl on line 92
+2017-11-06 23:53:58 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 15
+2017-11-06 23:53:58 - PHP Notice:  Undefined variable: text_news in E:\stbk\src\admin\view\template\home.tpl on line 86
+2017-11-06 23:53:58 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:58 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:58 - PHP Warning:  Invalid argument supplied for foreach() in E:\stbk\src\admin\view\template\home.tpl on line 87
+2017-11-06 23:53:58 - PHP Notice:  Undefined variable: user_permission in E:\stbk\src\admin\view\template\home.tpl on line 90
+2017-11-06 23:53:58 - PHP Notice:  Undefined variable: text_user_permission in E:\stbk\src\admin\view\template\home.tpl on line 92

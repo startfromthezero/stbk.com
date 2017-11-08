@@ -1,0 +1,500 @@
+<?php
+class ControllerGprsCard extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	/**
+	 * 开启与停止流量卡
+	 */
+	public function stop()
+	{
+		$this->registry->language('gprs/card');
+		$this->registry->model('gprs/card');
+		$card_id   = $this->request->get_var('card_id', 'i');
+		$is_normal = $this->request->get_var('is_normal', 'i');
+		$data      = array(
+			'card_id'   => $card_id,
+			'is_normal' => $is_normal ? 1 : 0,
+		);
+		if (!$is_normal)
+		{
+			$data['time_stop'] = 'dbf|NOW()';
+		}
+
+		echo ($this->model_gprs_card->update($data)) ? 'ok' : $this->language->get('error_card');
+	}
+
+	/**
+	 * 机构流量ICCID卡统计图表
+	 */
+	public function chart()
+	{
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$this->registry->model('gprs/card');
+		$this->registry->language('gprs/card');
+		$vrs['chart'] = $this->model_gprs_card->getChart();
+		$vrs['color'] = json_encode($this->language->get('arr_color'));
+
+		return $this->view('template/gprs/card_chart.tpl', $vrs);
+	}
+
+	private function getList()
+	{
+		$vrs   = $this->language->data;
+		$sort  = isset($this->request->get['sort']) ? $this->request->get['sort'] : '';
+		$order = isset($this->request->get['order']) ? $this->request->get['order'] : 'ASC';
+		$page  = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/card'),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+		$data        = array(
+			'sort'               => $sort,
+			'order'              => $order,
+			'start'              => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'              => $this->config->get('config_admin_limit'),
+			'filter_org_id'      => $this->request->get_var('orgId', 'i'),
+			'filter_card_iccid'  => $this->request->get_var('iccid'),
+			'filter_time_expire' => $this->request->get_var('expire', 'i'),
+			'filter_unicom_stop' => isset($this->request->get['unicom_stop']) ? $this->request->get_var('unicom_stop', 'i') : ''
+		);
+
+		$vrs['org_id']      = $data['filter_org_id'];
+		$vrs['card_iccid']  = $data['filter_card_iccid'];
+		$vrs['time_expire'] = $data['filter_time_expire'];
+		$vrs['unicom_stop'] = $data['filter_unicom_stop'];
+		$vrs['items']       = $this->model_gprs_card->getItems($data);
+
+		$url = ($order == 'ASC') ? '&order=DESC' : '&order=ASC';
+		$url .= $page ? '&page=' . $page : '';
+		$url .= isset($this->request->get['orgId']) ? '&orgId=' . $this->request->get['orgId'] : '';
+		$url .= isset($this->request->get['iccid']) ? '&iccid=' . $this->request->get['iccid'] : '';
+		$url .= isset($this->request->get['expire']) ? '&expire=' . $this->request->get['expire'] : '';
+		$url .= isset($this->request->get['unicom_stop']) ? '&unicom_stop=' . $this->request->get['unicom_stop'] : '';
+
+		$vrs['sort_gprs_month'] = $this->url->link('gprs/card', 'sort=gprs_month' . $url, true);
+		$vrs['sort_used_month'] = $this->url->link('gprs/card', 'sort=used_month' . $url, true);
+		$vrs['sort_used_total'] = $this->url->link('gprs/card', 'sort=used_total' . $url, true);
+		$vrs['sort_max_unused'] = $this->url->link('gprs/card', 'sort=max_unused' . $url, true);
+		$vrs['sort_time_last']  = $this->url->link('gprs/card', 'sort=time_last' . $url, true);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= $sort ? '&sort=' . $sort : '';
+		$url .= $order ? '&order=' . $order : '';
+		$url .= isset($this->request->get['orgId']) ? '&orgId=' . $this->request->get['orgId'] : '';
+		$url .= isset($this->request->get['iccid']) ? '&iccid=' . $this->request->get['iccid'] : '';
+		$url .= isset($this->request->get['expire']) ? '&expire=' . $this->request->get['expire'] : '';
+		$url .= isset($this->request->get['unicom_stop']) ? '&unicom_stop=' . $this->request->get['unicom_stop'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_gprs_card->getItems($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/card', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+		$vrs['sort']       = $sort;
+		$vrs['order']      = $order;
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/card_list.tpl', $vrs);
+	}
+
+	/**
+	 * 同步与结合所有卡的数据到缓存中
+	 */
+	public function updateMem()
+	{
+		$res = $this->sdb()->fetch_all('SELECT * FROM cc_gprs_card');
+		foreach ($res as $v)
+		{
+			$mkey      = "GPRS-CARD-{$v['card_iccid']}";
+			$card_info = $data = $this->mem_get($mkey);
+			if (empty($card_info))
+			{
+				continue;
+			}
+
+			$card_info = array_merge($v, $card_info);
+			$diff_key  = array_diff_key($card_info, $v);
+			if (!empty($diff_key))
+			{
+				foreach ($diff_key as $dk => $dv)
+				{
+					unset($card_info[$dk]);
+				}
+			}
+
+			$this->mem_set($mkey, $card_info, 0);
+		}
+
+		return 'sync and merge all card info to mem succeed';
+	}
+
+	/**
+	 * 设置流量卡为无限流量
+	 * 只限超级管理员可操作
+	 */
+	public function unlimit()
+	{
+		if ($this->user->getGroupId() != 1)
+		{
+			exit('No Permission');
+		}
+
+		$iccids = explode(',', $this->request->get_var('iccids'));
+		$names  = explode(',', $this->request->get_var('names'));
+		if (empty($iccids))
+		{
+			exit('No ICCID');
+		}
+
+		foreach ($iccids as $k => $iccid)
+		{
+			$key       = "GPRS-CARD-{$iccid}";
+			$card_info = $this->mem_get($key);
+			if (empty($card_info))
+			{
+				$card_info = $this->sdb()->fetch_row("SELECT * FROM cc_gprs_card WHERE card_iccid = '{$iccid}'");
+			}
+			if (empty($card_info))
+			{
+				continue;
+			}
+
+			/**
+			 * 修改流量
+			 */
+			$card_info['owner_name']  = !empty($names[$k]) ? $names[$k] : null; //修改名字
+			$card_info['gprs_month']  = 5 * 1024; //修改套餐
+			$card_info['max_unused']  = $card_info['gprs_month'] - $card_info['used_total']; //重新计算可使用流量
+			$card_info['time_expire'] = date('Y-m-d H:i:s', strtotime("+ 1 year")); //增加1年有效期
+
+			/**
+			 * 停号的需开启
+			 */
+			if ($card_info['unicom_stop'] == 1)
+			{
+				$params = array(
+					'cmd'          => 'action',
+					'serialNumber' => $card_info['card_sn'],
+					'timestamp'    => time(),
+					'token'        => md5(UNICOM_KEY . date('dHYm')),
+					'opFlag'       => 0
+				);
+				$res    = json_decode(wcore_utils::curl(UNICOM_URL, $params, true), true);
+				if ($res['status'] == 1)
+				{
+					$card_info['unicom_stop'] = 0;
+				}
+			}
+			$this->mem_set($key, $card_info, 0); //更新缓存
+			$result = $this->mdb()->update('cc_gprs_card', $card_info, "card_id = '{$card_info['card_id']}'"); //更新数据库
+			if ($result)
+			{
+				echo "Update {$iccid} Success</br>";
+			}
+			else
+			{
+				echo "Update {$iccid} Failed</br>";
+			}
+		}
+		exit('End');
+	}
+
+	/**
+	 * 修改流量卡批次
+	 * 只限超级管理员可操作
+	 */
+	public function updateBatch()
+	{
+		if ($this->user->getGroupId() != 1)
+		{
+			exit('No Permission');
+		}
+
+		$old_batch_id = 94; //原批次编号
+		$org_id       = 48; //新机构编号
+		$batch_id     = 98; //新批次编号
+		$month        = 6;  //增加有效期月数
+		$iccids       = array(
+			'8986011670901098799',
+			'8986011670901098800',
+			'8986011670901098801',
+			'8986011670901098802',
+			'8986011670901098803',
+			'8986011670901098804',
+			'8986011670901098805',
+			'8986011670901098806',
+			'8986011670901098807',
+			'8986011670901098808',
+			'8986011670901098809',
+			'8986011670901098810',
+			'8986011670901098811',
+			'8986011670901098812',
+			'8986011670901098813',
+			'8986011670901098814',
+			'8986011670901098815',
+			'8986011670901098816',
+			'8986011670901098817',
+			'8986011670901098818',
+			'8986011670901098819',
+			'8986011670901098820',
+			'8986011670901098821',
+			'8986011670901098822',
+			'8986011670901098823',
+			'8986011670901098824',
+			'8986011670901098825',
+			'8986011670901098826',
+			'8986011670901098827',
+			'8986011670901098828',
+			'8986011670901098829',
+			'8986011670901098830',
+			'8986011670901098831',
+			'8986011670901098832',
+			'8986011670901098833',
+			'8986011670901098834',
+			'8986011670901098835',
+			'8986011670901098836',
+			'8986011670901098837',
+			'8986011670901098838',
+			'8986011670901098839',
+			'8986011670901098840',
+			'8986011670901098841',
+			'8986011670901098842',
+			'8986011670901098843',
+			'8986011670901098844',
+			'8986011670901098845',
+			'8986011670901098846',
+			'8986011670901098847',
+			'8986011670901098848',
+			'8986011670901098849',
+			'8986011670901098850',
+			'8986011670901098851',
+			'8986011670901098852',
+			'8986011670901098853',
+			'8986011670901098854',
+			'8986011670901098855',
+			'8986011670901098856',
+			'8986011670901098857',
+			'8986011670901098858',
+			'8986011670901098859',
+			'8986011670901098860',
+			'8986011670901098861',
+			'8986011670901098862',
+			'8986011670901098863',
+			'8986011670901098864',
+			'8986011670901098865',
+			'8986011670901098866',
+			'8986011670901098867',
+			'8986011670901098868',
+			'8986011670901098869',
+			'8986011670901098870',
+			'8986011670901098871',
+			'8986011670901098872',
+			'8986011670901098873',
+			'8986011670901098874',
+			'8986011670901098875',
+			'8986011670901098876',
+			'8986011670901098877',
+			'8986011670901098878',
+			'8986011670901098879',
+			'8986011670901098880',
+			'8986011670901098881',
+			'8986011670901098882',
+			'8986011670901098883',
+			'8986011670901098884',
+			'8986011670901098885',
+			'8986011670901098886',
+			'8986011670901098887',
+			'8986011670901098888',
+			'8986011670901098889',
+			'8986011670901098890',
+			'8986011670901098891',
+			'8986011670901098892',
+			'8986011670901098893',
+			'8986011670901098894',
+			'8986011670901098895',
+			'8986011670901098896',
+			'8986011670901098897',
+			'8986011670901098898',
+			'8986011670901098899',
+			'8986011670901098900',
+			'8986011670901098901',
+			'8986011670901098902',
+			'8986011670901098903',
+			'8986011670901098904',
+			'8986011670901098905',
+			'8986011670901098906',
+			'8986011670901098907',
+			'8986011670901098908',
+			'8986011670901098909',
+			'8986011670901098910',
+			'8986011670901098911',
+			'8986011670901098912',
+			'8986011670901098913',
+			'8986011670901098914',
+			'8986011670901098915',
+			'8986011670901098916',
+			'8986011670901098917',
+			'8986011670901098918',
+			'8986011670901098919',
+			'8986011670901098920',
+			'8986011670901098921',
+			'8986011670901098922',
+			'8986011670901098923',
+			'8986011670901098924',
+			'8986011670901098925',
+			'8986011670901098926',
+			'8986011670901098927',
+			'8986011670901098928',
+			'8986011670901098929',
+			'8986011670901098930',
+			'8986011670901098931',
+			'8986011670901098932',
+			'8986011670901098933',
+			'8986011670901098934',
+			'8986011670901098935',
+			'8986011670901098936',
+			'8986011670901098937',
+			'8986011670901098938',
+			'8986011670901098939',
+			'8986011670901098940',
+			'8986011670901098941',
+			'8986011670901098942',
+			'8986011670901098943',
+			'8986011670901098944',
+			'8986011670901098945',
+			'8986011670901098946',
+			'8986011670901098947',
+			'8986011670901098948',
+			'8986011670901098949',
+			'8986011670901098950',
+			'8986011670901098951',
+			'8986011670901098952',
+			'8986011670901098953',
+			'8986011670901098954',
+			'8986011670901098955',
+			'8986011670901098956',
+			'8986011670901098957',
+			'8986011670901098958',
+			'8986011670901098960',
+			'8986011670901098961',
+			'8986011670901098962',
+			'8986011670901098963',
+			'8986011670901098964',
+			'8986011670901098965',
+			'8986011670901098966',
+			'8986011670901098967',
+			'8986011670901098968',
+			'8986011670901098969',
+			'8986011670901098970',
+			'8986011670901098971',
+			'8986011670901098972',
+			'8986011670901098973',
+			'8986011670901098974',
+			'8986011670901098975',
+			'8986011670901098976',
+			'8986011670901098977',
+			'8986011670901098978',
+			'8986011670901098979',
+			'8986011670901098980',
+			'8986011670901098981',
+			'8986011670901098982',
+			'8986011670901098983',
+			'8986011670901098984',
+			'8986011670901098985',
+			'8986011670901098986',
+			'8986011670901098987',
+			'8986011670901098988',
+			'8986011670901098989',
+			'8986011670901098990',
+			'8986011670901098991',
+			'8986011670901098992',
+			'8986011670901098993',
+			'8986011670901098994',
+			'8986011670901098995',
+			'8986011670901098996',
+			'8986011670901098997',
+			'8986011670901098998',
+			'8986011670901098999'
+		);
+
+		foreach ($iccids as $iccid)
+		{
+			$key = "GPRS-CARD-{$iccid}";
+			if (!$card = $this->mem_get($key))
+			{
+				continue;
+			}
+
+			$card['org_id']      = $org_id;
+			$card['batch_id']    = $batch_id;
+			$card['time_expire'] = date('Y-m-d H:i:s', strtotime("{$card['time_expire']} + {$month} month"));
+			$this->mem_set($key, $card);
+		}
+
+		$sql = "UPDATE `cc_gprs_card` SET org_id = {$org_id}, batch_id = {$batch_id},
+		time_expire = DATE_ADD(time_expire, INTERVAL {$month} MONTH)
+		WHERE card_iccid IN ('" . implode("','", $iccids) . "')";
+		$this->mdb()->query($sql);
+		if ($this->mdb()->affected_rows())
+		{
+			/**
+			 * 修改该批卡的支付记录所属机构
+			 * 原批次减少入卡数量，新批次增加入卡数量
+			 */
+			$sql = "UPDATE `cc_gprs_pay` P INNER JOIN `cc_gprs_card` C ON P.card_id = C.card_id SET P.org_id = C.org_id WHERE C.card_iccid IN ('" . implode("','", $iccids) . "')";
+			$this->mdb()->query($sql);
+			$num = count($iccids);
+			$this->mdb()->query("UPDATE `cc_gprs_batch` SET card_amount = card_amount - {$num} WHERE batch_id = {$old_batch_id}");
+			$this->mdb()->query("UPDATE `cc_gprs_batch` SET card_amount = card_amount + {$num} WHERE batch_id = {$batch_id}");
+			exit('Update Success');
+		}
+		exit('Update Failed');
+	}
+}
+?>

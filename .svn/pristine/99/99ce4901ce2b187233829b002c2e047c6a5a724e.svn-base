@@ -1,0 +1,65 @@
+<?php
+// Heading
+$_['heading_title'] = '控制面板';
+
+$_['text_total']        = '总计';
+$_['text_org_name']     = '机构名称';
+$_['text_sell_num']     = '售卡数量';
+$_['text_stop_num']     = '停号数量';
+$_['text_renewal_num']  = '续费数量';
+$_['text_rate']         = '续费费率';
+$_['text_not_act_num']  = '未激活数';
+$_['text_not_act_rate'] = '未激活率';
+$_['text_act_num']      = '已激活数';
+$_['text_act_rate']     = '已激活率';
+$_['text_paid_log']     = '已付次数';
+$_['text_nopaid_log']   = '未付次数';
+$_['text_paid_total']   = '已付金额';
+$_['text_nopaid_total'] = '未付金额';
+$_['text_org_paylog']   = '机构充值次数';
+$_['text_org_gprs']     = '机构充值总流量（MB）';
+$_['text_org_price']    = '机构充值总金额（元）';
+
+// Error
+$_['error_install']     = '系统提示： 安装目录尚未删除,出于安全原因，应予以删除！';
+$_['error_image']       = '系统提示： 图片目录%s 不可写！';
+$_['error_image_cache'] = '系统提示： 图片缓存目录%s 不可写！';
+$_['error_cache']       = '系统提示： 缓存目录%s 不可写！';
+$_['error_download']    = '系统提示： 下载目录%s 不可写！';
+$_['error_logs']        = '系统提示： 日志目录%s 不可写！';
+
+$_['arr_color'] = array(
+	'#C1232B',
+	'#B5C334',
+	'#FCCE10',
+	'#E87C25',
+	'#27727B',
+	'#FE8463',
+	'#9BCA63',
+	'#FAD860',
+	'#F3A43B',
+	'#60C0DD',
+	'#D7504B',
+	'#C6E579',
+	'#F4E001',
+	'#F0805A',
+	'#26C0C0',
+	'#ff7f50',
+	'#87cefa',
+	'#da70d6',
+	'#32cd32',
+	'#6495ed',
+	'#ff69b4',
+	'#ba55d3',
+	'#cd5c5c',
+	'#ffa500',
+	'#40e0d0',
+	'#d575d0',
+	'#e4fefe',
+	'#337f7c',
+	'#e5b827',
+	'#7cb9e1',
+	'#7987ba',
+	'#575add'
+);
+?>

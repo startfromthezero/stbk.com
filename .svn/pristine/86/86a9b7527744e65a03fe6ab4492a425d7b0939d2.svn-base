@@ -1,0 +1,92 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?><div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<?php if ($success) { ?>
+	<div class="success"><?php echo $success; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/alert" class="button btn-red"><?php echo $button_reset; ?></a>
+				<?php if ($mpermission) { ?>
+				<a onclick="location = '<?php echo $insert; ?>'" class="button btn-green"><?php echo $button_insert; ?></a>
+				<?php } ?>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="list">
+				<thead>
+					<tr>
+						<td width="250"><?php echo $text_gprs_user; ?></td>
+						<td width="200"><?php echo $text_gprs_alert; ?></td>
+						<td><?php echo $text_alert_tpl; ?></td>
+						<td><?php echo $text_finish_tpl; ?></td>
+						<td width="100" class="center"><?php echo $text_action; ?></td>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="filter center">
+						<td>
+							<select name="org_id">
+								<option value="*"></option>
+								<?php if ($user_group_id <= 1) { ?>
+								<option value="0" <?php if (0 === $org_id) { ?> selected="selected"<?php } ?>><?php echo $text_common_user; ?></option>
+								<?php } ?>
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>" <?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+					<?php if (!empty($items)) { ?>
+					<?php foreach ($items as $item) { ?>
+					<tr>
+						<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : $text_common_user; ?></td>
+						<td><?php echo modules_funs::gpgsFormat($item['alert_value']); ?></td>
+						<td><?php echo sprintf($item['alert_tpl1'],$item['alert_value']); ?></td>
+						<td><?php echo $item['alert_tpl2']; ?></td>
+						<td class="center"> [ <a href="/gprs/alert/update?gprs_alert_id=<?php echo $item['gprs_alert_id'];?>"><?php echo $button_edit; ?></a>]</td>
+					</tr>
+					<?php } ?>
+					<?php } else { ?>
+					<tr>
+						<td class="center" colspan="5"><?php echo $text_no_results; ?></td>
+					</tr>
+					<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/alert?';
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += '&org_id=' + encodeURIComponent(org_id);
+	}
+	location = url;
+}
+</script>
+<?php echo $page_footer; ?>

@@ -1,0 +1,182 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_my_pay; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/paylog/pay?card_id=<?php echo $card_id; ?>" class="button btn-red"><?php echo $button_reset; ?></a>
+				<a onclick="history.back()" class="button btn-darkblue"><?php echo $button_back; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="find">
+				<tbody>
+				<tr>
+					<td><?php echo $text_card_iccid; ?>：<?php echo $card['card_iccid']; ?></td>
+					<td><?php echo $text_gprs_month; ?>：<?php echo modules_funs::gpgsFormat($card['gprs_month']); ?></td>
+					<td><?php echo $text_used_total; ?>：<?php echo modules_funs::gpgsFormat($card['used_total']); ?></td>
+					<td><?php echo $text_used_month; ?>：<?php echo modules_funs::gpgsFormat($card['used_month']); ?></td>
+					<td><?php echo $text_pay_total; ?>：<?php echo modules_funs::gpgsFormat($card['pay_total']); ?></td>
+					<td><?php echo $text_pay_unused; ?>：<?php echo modules_funs::gpgsFormat($card['pay_unused']); ?></td>
+					<td><?php echo $text_max_unused; ?>：<?php echo modules_funs::gpgsFormat($card['max_unused']); ?></td>
+				</tr>
+				</tbody>
+			</table>
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_gprs_amount; ?></td>
+					<td><?php echo $text_gprs_price; ?></td>
+					<td><?php echo $text_pay_method; ?></td>
+					<td><?php echo $text_is_paid; ?></td>
+					<td><?php echo $text_transfer_id; ?></td>
+					<td align="center"><?php echo $text_time_added; ?></td>
+					<td align="center"><?php echo $text_time_paid; ?></td>
+					<td><?php echo $text_gprs_memo; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr class="filter center">
+					<td></td>
+					<td></td>
+					<td>
+						<select name="pay_method">
+							<option value='*'></option>
+							<?php foreach ($arr_pay_type as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $pay_method) { ?> selected="selected"<?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td>
+						<select name="is_paid">
+							<option value='*'></option>
+							<?php foreach ($arr_pay_status as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k === $is_paid) { ?> selected="selected" <?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td>
+						<input style="width:40%;" type="text" name="date_start" value="<?php echo $date_start; ?>" id="cz-date-start" size="5" />
+						- <input style="width:40%;" type="text" name="date_end" value="<?php echo $date_end; ?>" id="cz-date-end" size="5" />
+					</td>
+					<td>
+						<input style="width:40%;" type="text" name="paid_date_start" value="<?php echo $paid_date_start; ?>" id="fk-date-start" size="5" />
+						- <input style="width:40%;" type="text" name="paid_date_end" value="<?php echo $paid_date_end; ?>" id="fk-date-end" size="5" />
+					</td>
+					<td></td>
+				</tr>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_amount']); ?></td>
+					<td><?php echo $this->currency->format($item['gprs_price']); ?></td>
+					<td><?php echo $arr_pay_type[$item['pay_method']]; ?></td>
+					<td><?php echo $arr_pay_status[$item['is_paid']]; ?></td>
+					<td><?php echo $item['transfer_id']; ?></td>
+					<td align="center"><?php echo $item['time_added']; ?></td>
+					<td align="center"><?php echo $item['time_paid']; ?></td>
+					<td><?php echo $item['gprs_memo']; ?></td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="8"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/card/pay?card_id=<?php echo $card_id; ?>';
+
+	var pay_method = $('select[name=\'pay_method\']').val();
+	if (pay_method != '*')
+	{
+		url += '&pay_method=' + encodeURIComponent(pay_method);
+	}
+
+	var is_paid = $('select[name=\'is_paid\']').val();
+	if (is_paid != '*')
+	{
+		url += '&is_paid=' + encodeURIComponent(is_paid);
+	}
+
+	var date_start = $('input[name=\'date_start\']').val();
+	if (date_start)
+	{
+		url += '&date_start=' + encodeURIComponent(date_start);
+	}
+
+	var date_end = $('input[name=\'date_end\']').val();
+	if (date_end)
+	{
+		url += '&date_end=' + encodeURIComponent(date_end);
+	}
+
+	var paid_date_start = $('input[name=\'paid_date_start\']').val();
+	if (paid_date_start)
+	{
+		url += '&paid_date_start=' + encodeURIComponent(paid_date_start);
+	}
+
+	var paid_date_end = $('input[name=\'paid_date_end\']').val();
+	if (paid_date_end)
+	{
+		url += '&paid_date_end=' + encodeURIComponent(paid_date_end);
+	}
+
+	location = url;
+}
+
+$('#cz-date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#cz-date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#cz-date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#cz-date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+
+$('#fk-date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#fk-date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#fk-date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#fk-date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+</script>
+<?php echo $page_footer; ?>

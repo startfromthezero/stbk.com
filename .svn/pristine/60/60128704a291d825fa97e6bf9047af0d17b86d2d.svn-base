@@ -1,0 +1,144 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?><div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<?php if ($success) { ?>
+	<div class="success"><?php echo $success; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/pack" class="button btn-red"><?php echo $button_reset; ?></a>
+				<?php if ($mpermission) { ?>
+				<a onclick="location = '<?php echo $insert; ?>'" class="button btn-green"><?php echo $button_insert; ?></a>
+				<?php } ?>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="list">
+				<thead>
+					<tr>
+						<td><?php echo $text_gprs_user; ?></td>
+						<td><?php echo $text_gprs_amount; ?></td>
+						<td><?php echo $text_gprs_price; ?></td>
+						<td><?php echo $text_live_month; ?></td>
+						<td><?php echo $text_gprs_memo; ?></td>
+						<td width="15%" class="center"><?php echo $text_manage; ?></td>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="filter center">
+						<td>
+							<select name="org_id">
+								<option value="*"></option>
+								<?php if ($user_group_id <= 1) { ?>
+								<option value="0" <?php if (0 === $org_id) { ?> selected="selected"<?php } ?>><?php echo $text_public_pack; ?></option>
+								<?php } ?>
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>" <?php if ($k == $org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+					<?php if (!empty($items)) { ?>
+					<?php foreach ($items as $item) { ?>
+					<tr>
+						<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : $text_public_pack; ?></td>
+						<td><?php echo modules_funs::gpgsFormat($item['gprs_amount']); ?></td>
+						<td><?php echo $this->currency->format($item['gprs_price']); ?></td>
+						<td><?php echo $arr_live_month[$item['live_month']]; ?></td>
+						<td><?php echo $item['gprs_memo']; ?></td>
+						<td class="center">
+							<button class="button btn-blue" onclick="location='/gprs/pack/update?pack_id=<?php echo $item['pack_id'];?>'"><?php echo $text_edit; ?></button>&emsp;
+							<?php if($item['gprs_status']) { ?>
+							<button class="button btn-red" onclick="packStop(this,<?php echo $item['pack_id']; ?>,0)"><?php echo $text_disabled; ?></button>
+							<?php } else { ?>
+							<button class="button btn-green" onclick="packStop(this,<?php echo $item['pack_id']; ?>,1)"><?php echo $text_enabled; ?></button>
+							<?php } ?>
+						</td>
+					</tr>
+					<?php } ?>
+					<?php } else { ?>
+					<tr>
+						<td class="center" colspan="7"><?php echo $text_no_results; ?></td>
+					</tr>
+					<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function packStop(obj, pack_id, gprs_status)
+{
+	if (gprs_status)
+	{
+		var confirm_text = '<?php echo $text_confirm_start; ?>';
+		var onclick_fun = "packStop(this," + pack_id + ",0)";
+	}
+	else
+	{
+		var confirm_text = '<?php echo $text_confirm_stop; ?>？';
+		var onclick_fun = "packStop(this," + pack_id + ",1)";
+	}
+	if (!confirm(confirm_text))
+	{
+		return;
+	}
+	$.post('/gprs/pack/stop', {'pack_id': pack_id, 'gprs_status': gprs_status}, function (res)
+	{
+		if (res != 'ok')
+		{
+			alert(res)
+		}
+		else
+		{
+			if (gprs_status)
+			{
+				$(obj).text('<?php echo $text_disabled; ?>');
+				$(obj).removeClass('btn-green');
+				$(obj).addClass('btn-red');
+			}
+			else
+			{
+				$(obj).text('<?php echo $text_enabled; ?>');
+				$(obj).removeClass('btn-red');
+				$(obj).addClass('btn-green');
+			}
+			$(obj).attr('onclick', onclick_fun);
+		}
+	});
+}
+
+function filter()
+{
+	var url = '/gprs/pack?';
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += '&org_id=' + encodeURIComponent(org_id);
+	}
+
+	location = url;
+}
+</script>
+<?php echo $page_footer; ?>

@@ -1,0 +1,253 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<?php if($log) { ?>
+				<a href="javascript:void(0)" id="btn-open" class="button btn-green"><?php echo $text_open; ?></a>
+				<a href="javascript:void(0)" id="btn-close" class="button btn-yellow" style="display:none"><?php echo $text_close; ?></a>
+				<?php } ?>
+				<?php if ($mpermission) { ?><a href="javascript:showDetails('<?php echo $url; ?>')" class="button btn-pink"><?php echo $button_chart; ?></a><?php } ?>
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/paylog" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<div id="details" style="display:none;">
+				<table class="list">
+					<thead>
+					<tr>
+						<td><?php echo $text_org_name; ?></td>
+						<td><?php echo $text_paid_log; ?></td>
+						<td><?php echo $text_nopaid_log; ?></td>
+						<td><?php echo $text_paid_total; ?></td>
+						<td><?php echo $text_nopaid_total; ?></td>
+					</tr>
+					</thead>
+					<tbody>
+					<?php if($log) { ?>
+					<?php foreach ($log as $l) { ?>
+					<tr>
+						<td>
+							<a href="/gprs/pay_report?org_id=<?php echo $l['org_id']; ?>"><?php echo $orgs[$l['org_id']]; ?></a>
+						</td>
+						<td><?php echo $l['paid_amount']; ?></td>
+						<td><?php echo $l['nopaid_amount']; ?></td>
+						<td><?php echo $this->currency->format($l['paid_total']); ?></td>
+						<td><?php echo $this->currency->format($l['nopaid_total']); ?></td>
+					</tr>
+					<?php } ?>
+					<?php } ?>
+					</tbody>
+				</table>
+			</div>
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_card_iccid; ?></td>
+					<td><?php echo $text_org_name; ?></td>
+					<td><?php echo $text_pay_method; ?></td>
+					<td><?php echo $text_transfer_id; ?></td>
+					<td><?php echo $text_gprs_amount; ?></td>
+					<td><?php echo $text_gprs_price; ?></td>
+					<td class="center"><?php echo $text_time_added; ?></td>
+					<td><?php echo $text_is_paid; ?></td>
+					<td class="center"><?php echo $text_time_paid; ?></td>
+				</tr>
+				</thead>
+
+				<tr class="filter center">
+					<td width="12%"><input type="text" name="card_iccid" value="<?php echo $card_iccid ? $card_iccid : ''; ?>" size="16" /></td>
+					<td><select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td>
+						<select name="pay_method">
+							<option value="*"></option>
+							<?php foreach ($arr_pay_type as $k => $v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k == $pay_method) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option><?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td>
+						<select name="pack_id">
+							<option value="*"></option>
+							<?php foreach ($pack as $k => $v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k == $pack_id) { ?> selected="selected"<?php } ?>>
+							<?php echo modules_funs::gpgsFormat($v); ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td></td>
+					<td>
+						<input style="width:40%;" type="text" name="date_start" value="<?php echo $date_start; ?>" id="cz-date-start" size="5" />
+						- <input style="width:40%;" type="text" name="date_end" value="<?php echo $date_end; ?>" id="cz-date-end" size="5" />
+					</td>
+					<td>
+						<select name="is_paid">
+							<option value='*'></option>
+							<?php foreach ($arr_pay_status as $k => $v) { ?>
+							<option value="<?php echo $k; ?>" <?php if ($k === $is_paid) { ?> selected="selected" <?php } ?>><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td>
+						<input style="width:40%;" type="text" name="paid_date_start" value="<?php echo $paid_date_start; ?>" id="fk-date-start" size="5" />
+						- <input style="width:40%;" type="text" name="paid_date_end" value="<?php echo $paid_date_end; ?>" id="fk-date-end" size="5" />
+					</td>
+				</tr>
+				<?php if (!empty($items)) { ?>
+				<?php foreach ($items as $item) { ?>
+				<tr>
+					<td><?php echo $item['card_iccid']; ?></td>
+					<td><?php echo $orgs[$item['org_id']]; ?></td>
+					<td><?php echo $arr_pay_type[$item['pay_method']]; ?></td>
+					<td><?php echo $item['transfer_id']; ?></td>
+					<td><?php echo modules_funs::gpgsFormat($item['gprs_amount']); ?></td>
+					<td><?php echo $this->currency->format($item['gprs_price']); ?></td>
+					<td class="center"><?php echo $item['time_added']; ?></td>
+					<td><?php echo $arr_pay_status[$item['is_paid']]; ?></td>
+					<td class="center"><?php echo $item['time_paid']; ?></td>
+				</tr>
+				<?php } ?>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="9"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+$('#btn-close').click(function ()
+{
+	$('#details').slideUp(1500);
+	$('#btn-open').css('display','inline-block');
+	$('#btn-close').css('display', 'none');
+});
+$('#btn-open').click(function ()
+{
+	$('#details').slideDown(1500);
+	$('#btn-close').css('display', 'inline-block');
+	$('#btn-open').css('display', 'none');
+});
+
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+
+function filter()
+{
+	var url = '/gprs/paylog?';
+
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'org_id=' + encodeURIComponent(org_id);
+	}
+
+	var card_iccid = $('input[name=\'card_iccid\']').val();
+	if (card_iccid)
+	{
+		url += '&card_iccid=' + encodeURIComponent(card_iccid);
+	}
+
+	var pay_method = $('select[name=\'pay_method\']').val();
+	if (pay_method != '*')
+	{
+		url += '&pay_method=' + encodeURIComponent(pay_method);
+	}
+
+	var pack_id = $('select[name=\'pack_id\']').val();
+	if (pack_id != '*')
+	{
+		url += '&pack_id=' + encodeURIComponent(pack_id);
+	}
+
+	var is_paid = $('select[name=\'is_paid\']').val();
+	if (is_paid != '*')
+	{
+		url += '&is_paid=' + encodeURIComponent(is_paid);
+	}
+
+	var date_start = $('input[name=\'date_start\']').val();
+	if (date_start)
+	{
+		url += '&date_start=' + encodeURIComponent(date_start);
+	}
+
+	var date_end = $('input[name=\'date_end\']').val();
+	if (date_end)
+	{
+		url += '&date_end=' + encodeURIComponent(date_end);
+	}
+
+	var paid_date_start = $('input[name=\'paid_date_start\']').val();
+	if (paid_date_start)
+	{
+		url += '&paid_date_start=' + encodeURIComponent(paid_date_start);
+	}
+
+	var paid_date_end = $('input[name=\'paid_date_end\']').val();
+	if (paid_date_end)
+	{
+		url += '&paid_date_end=' + encodeURIComponent(paid_date_end);
+	}
+	location = url;
+}
+
+$('#cz-date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#cz-date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#cz-date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#cz-date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+
+$('#fk-date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#fk-date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#fk-date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#fk-date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+
+function showDetails(url)
+{
+	var $url = '/gprs/paylog/chart?'+url;
+	$.fn.tboxy({title: '充值与分析统计图表', width: '900px', value: {type: 'url', val: $url}});
+}
+</script>
+<?php echo $page_footer; ?>

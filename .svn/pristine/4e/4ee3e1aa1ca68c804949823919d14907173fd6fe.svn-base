@@ -1,0 +1,188 @@
+<?php
+class ControllerGprsMonthReport extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_month_report'));
+
+		$this->registry->model('gprs/paylog');
+
+		return $this->getList();
+	}
+
+	public function detail()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_month_report'));
+		$this->registry->model('gprs/card');
+
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_report'),
+			'href'      => $this->url->link('gprs/report'),
+			'separator' => ' :: '
+		);
+
+		$org_id = $this->request->get_var('org_id', 'i');
+
+		$page = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data = array(
+			'start'             => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'             => $this->config->get('config_admin_limit'),
+			'filter_org_id'     => $org_id,
+			'filter_date_start' => $this->request->get_var('filter_date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('filter_date_end'),
+		);
+
+		$vrs['items'] = $this->model_gprs_card->getPayDetail($data);
+
+		$this->registry->model('user/org');
+		$vrs['org'] = $this->model_user_org->get($org_id);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_card->getPayDetail($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/report/detail', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/report.tpl', $vrs);
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_month_report'),
+			'href'      => $this->url->link('gprs/month_report'),
+			'separator' => ' :: '
+		);
+
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$page                     = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data                     = array(
+			'start'             => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'             => $this->config->get('config_admin_limit'),
+			'filter_date_start' => $this->request->get_var('filter_date_start', 's'),
+			'filter_date_end'   => $this->request->get_var('filter_date_end'),
+			'filter_org_id'     => $this->request->get_var('filter_org_id', 'i'),
+		);
+		$vrs['filter_date_start'] = $data['filter_date_start'];
+		$vrs['filter_date_end']   = $data['filter_date_end'];
+		$vrs['filter_org_id']     = $data['filter_org_id'];
+
+		$vrs['items'] = $this->model_gprs_paylog->getMonthCount($data);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_paylog->getPayCount($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/report', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+		wcore_utils::debug($vrs['items']);
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/month_report.tpl', $vrs);
+	}
+
+	/**
+	 * 机构充值记录统计图表
+	 */
+	public function chart()
+	{
+		$this->registry->language('gprs/paylog');
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$orgs = $this->model_user_user->getOrgs();
+
+		$changeId = $this->request->get_var('changeId');
+
+		switch ($changeId)
+		{
+			case 1:
+				$chart = 'COUNT(pay_id)';
+				break;
+			case 2:
+				$chart = 'SUM(gprs_amount)';
+				break;
+			default :
+				$chart = 'SUM(gprs_price)';
+				break;
+		}
+
+		$this->registry->model('gprs/paylog');
+		$chart = $this->model_gprs_paylog->getReportChart($chart);
+		$org   = $data = array();
+		foreach ($chart as $k => $v)
+		{
+			$org[]  = $orgs[$k];
+			$data[] = $v;
+		}
+		$vrs['org']   = json_encode($org);
+		$vrs['data']  = json_encode($data);
+		$vrs['color'] = json_encode($this->language->get('arr_color'));
+
+		return $this->view("template/gprs/report_chart{$changeId}.tpl", $vrs);
+	}
+}
+?>

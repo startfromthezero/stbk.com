@@ -1,0 +1,67 @@
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<div id="main" style="height:400px;"></div><!-- ECharts单文件引入 -->
+<script type="text/javascript">
+	// 路径配置
+	require.config({
+		paths: {
+			echarts: 'http://echarts.baidu.com/build/dist'
+		}
+	});
+
+	// 使用
+	require(
+			[
+				'echarts',
+				'echarts/chart/pie', // 使用饼状图就加载pie模块，按需加载
+			],
+			function (ec)
+			{
+				// 基于准备好的dom，初始化echarts图表
+				var myChart = ec.init(document.getElementById('main'));
+
+				var option = {
+					title  : {
+						text   : '充值与分析',
+						subtext: '<?php if ($date_start || $date_end) { echo "充值时间：".($date_start && !$date_end ? $date_start." 00:00:01之后" : "").($date_end && !$date_start ? $date_end." 23:59:59之前" : "").($date_end && $date_start ? "从".$date_start." 00:00:01 - ".$date_end." 23:59:59" : ""); } ?>',
+						x      : 'center'
+					},
+					tooltip: {
+						trigger  : 'item',
+						formatter: "{a} <br/>{b} : {c} ({d}%)"
+					},
+					legend : {
+						x   : '25%',
+						y   : '20%',
+						data: ['微信支付', '支付宝', '充值卡', '银行转账', '已付款', '未付款']
+					},
+					toolbox: {
+						show   : true,
+						feature: {
+							mark       : {show: true},
+							dataView   : {show: true, readOnly: false},
+							restore    : {show: true},
+							saveAsImage: {show: true}
+						}
+					},
+
+					calculable: true,
+					series    : [
+						{
+							name  : '付款方式',
+							type  : 'pie',
+							radius: '55%',
+							center: ['30%', '60%'],
+							data  : <?php echo $method; ?>
+						},
+						{
+							name  : '支付状态',
+							type  : 'pie',
+							radius: '50%',
+							center: ['75%', '60%'],
+							data  : <?php echo $paid; ?>
+						}
+					]
+					};
+				myChart.setOption(option);
+				});
+</script>

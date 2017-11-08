@@ -1,0 +1,21 @@
+<?php
+// Heading
+$_['heading_title'] = 'Dashboard';
+
+// Text
+$_['org_topup_stats']   = 'Bodies Top up statistics';
+$_['text_org_name']     = 'Organization';
+$_['text_pay_type']     = 'Payment';
+$_['text_paid_log']     = 'Paid record';
+$_['text_nopaid_log']   = 'No payment record';
+$_['text_paid_total']   = 'Amount paid';
+$_['text_nopaid_total'] = 'Unpaid amount';
+
+// Error
+$_['error_install']     = 'Warning: Install folder still exists and should be deleted for security reasons!';
+$_['error_image']       = 'Warning: Image directory %s not writeable!';
+$_['error_image_cache'] = 'Warning: Image cache directory %s not writeable!';
+$_['error_cache']       = 'Warning: Cache directory %s not writeable!';
+$_['error_download']    = 'Warning: Download directory %s not writeable!';
+$_['error_logs']        = 'Warning: Log directory %s not writeable!';
+?>

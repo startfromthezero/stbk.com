@@ -1,0 +1,84 @@
+<?php
+// Heading
+$_['heading_title'] = '流量卡批次管理';
+
+// Text
+$_['text_update_success'] = '成功提示： 您已成功更新流量卡批次信息！';
+$_['text_batch_sn']       = '批次号';
+$_['text_batch_memo']     = '备注';
+$_['text_batch_shipper']  = '发货人';
+$_['text_batch_name']     = '批次名称';
+$_['text_city']           = '销往城市';
+$_['text_gprs_month']     = '套餐流量';
+$_['text_time_added']     = '添加时间';
+$_['text_card_amount']    = '入卡数量';
+$_['text_live_month']     = '有效月数';
+$_['text_action']         = '管理';
+$_['text_excel_select']   = '请选择对应的列';
+$_['text_upload']         = '你的文件已经成功上传！';
+
+// Entry
+$_['entry_batch_sn']       = '批次编号：';
+$_['entry_batch_name']     = '批次名称：';
+$_['entry_batch_memo']     = '批次备注：';
+$_['entry_batch_shipper']  = '发货人姓名：';
+$_['entry_org_name']       = '机构名称：';
+$_['entry_province']       = '销往省份：';
+$_['entry_city']           = '销往城市：';
+$_['entry_district']       = '销往区县：';
+$_['entry_gprs_month']     = '套餐流量：';
+$_['entry_live_month']     = '有效月数：';
+$_['entry_hint']           = '&emsp;&emsp;如:上网卡有效期为6个月';
+$_['entry_import_devices'] = '导入卡号：';
+
+$_['entry_card_sn']      = '流量卡卡号码：';
+$_['entry_card_name']    = '流量卡别名：';
+$_['entry_card_iccid']   = '流量卡ICCID：';
+$_['entry_owner_name']   = '卡主姓名：';
+$_['entry_owner_gender'] = '卡主性别：';
+$_['entry_owner_cdi']    = '卡主身份证：';
+
+$_['entry_txt_download']  = 'txt案例文件下载';
+$_['entry_xlsx_download'] = 'xlsx案例文件下载';
+$_['entry_online_card']   = '上网卡号（第一列）';
+$_['entry_iccid_card']    = 'ICCID卡号（第二列）';
+$_['entry_warm_prompt']   = '温馨提示：';
+$_['entry_example']       = '目前支持*.txt和*.xlsx文件导入,txt案例格式如下(上网卡+Tab键+ICCID卡号+回车)';
+$_['entry_file_download'] = '文件下载（<span class="required">建议使用xlsx文件</span>）';
+
+//note
+$_['note_confirm'] = '请确认输入内容无误！';
+
+// Error
+$_['error_permission']    = '系统提示： 抱歉，您没有权限新增或修改批次！';
+$_['error_batch_sn']      = '请填写批次编号';
+$_['error_batch_name']    = '请填写批次名称';
+$_['error_batch_memo']    = '备注字数不能超过200字！';
+$_['error_batch_shipper'] = '请填写发货人姓名';
+$_['error_org']           = '请选择机构';
+$_['error_province']      = '请选择销往省份';
+$_['error_city']          = '请选择销往城市';
+$_['error_gprs_month']    = '请填写正确的流量值';
+$_['error_live_month']    = '请填写正确的有效月数';
+
+$_['error_file']      = '请上传批次文件!';
+$_['error_file_size'] = '请不要上传空文件!';
+$_['error_iccid']     = '请选择流量卡ICCID对应的列';
+$_['error_upload']    = '请选择文档！';
+$_['error_filename']  = '文件名称必须在3到128个字符之间！';
+$_['error_exists']    = '文件不存在！';
+$_['error_mask']      = '文件扰码必须是3-128字符！';
+$_['error_file_type'] = '无效的文件类型！';
+$_['error_row']       = '请选择正确的对应列或确保文件中该列数据正确';
+
+//Array
+$_['arr_live_month'] = array(
+	'0'   => '请选择有效的月数',
+	'1'   => '1个月',
+	'3'   => '3个月',
+	'6'   => '6个月(半年)',
+	'12'  => '12个月(一年)',
+	'18'  => '18个月(一年半)',
+	'24'  => '24个月(两年)',
+	'999' => '有效期无限制'
+);

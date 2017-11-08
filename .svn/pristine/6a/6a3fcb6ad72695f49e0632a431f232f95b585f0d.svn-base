@@ -1,0 +1,86 @@
+<?php
+// Heading
+$_['heading_title'] = 'Recharge detailed statistics';
+
+// Text
+$_['text_sell_report']  = 'Org sell statistics';
+$_['text_pay_pack']     = 'Card package statistics';
+$_['text_pay_report']   = 'Org recharge statistics';
+$_['text_card_iccid']   = 'ICCID card';
+$_['button_chart']      = 'Chart';
+$_['text_gprs_amount']  = 'pack';
+$_['text_gprs_price']   = 'price';
+$_['text_pay_method']   = 'payment';
+$_['text_transfer_id']  = 'pay serial number';
+$_['text_is_paid']      = 'payment status';
+$_['text_pack_gprs']    = 'Gprs Package';
+$_['text_pack_price']   = 'Price Package';
+$_['text_time_paid']    = 'time of payment';
+$_['text_time_added']   = 'Top up time';
+$_['text_org_name']     = 'Organization';
+$_['text_pay_type']     = 'payment';
+$_['text_paid_log']     = 'paid record';
+$_['text_nopaid_log']   = 'No payment record';
+$_['text_paid_total']   = 'Amount paid';
+$_['text_nopaid_total'] = 'unpaid amount';
+$_['text_open']         = 'open details';
+$_['text_close']        = 'close details';
+$_['text_total']        = 'total';
+$_['text_org_filter']   = 'Org Filter:';
+$_['text_pay_way']      = 'Top-up Way:';
+
+//机构售卡统计
+$_['text_sell_report']    = 'Org Vending statistics';
+$_['text_org_name']       = 'Organization:';
+$_['text_sell_num']       = 'Number of Vending';
+$_['text_renewal_num']    = 'Number of renewals';
+$_['text_rate']           = 'Renewal Rate (%)';
+$_['text_org_sell_chart'] = 'organization charts Vending renewals';
+
+$_['arr_pay_type'] = array(
+	'1' => 'micro-channel pay',
+	'2' => 'Alipay',
+	'3' => 'prepaid card',
+	'4' => 'bank transfer'
+);
+
+$_['arr_pay_status'] = array(
+	'0' => 'unpaid',
+	'1' => 'paid'
+);
+
+$_['arr_color'] = array(
+	'#C1232B',
+	'#B5C334',
+	'#FCCE10',
+	'#E87C25',
+	'#27727B',
+	'#FE8463',
+	'#9BCA63',
+	'#FAD860',
+	'#F3A43B',
+	'#60C0DD',
+	'#D7504B',
+	'#C6E579',
+	'#F4E001',
+	'#F0805A',
+	'#26C0C0',
+	'#ff7f50',
+	'#87cefa',
+	'#da70d6',
+	'#32cd32',
+	'#6495ed',
+	'#ff69b4',
+	'#ba55d3',
+	'#cd5c5c',
+	'#ffa500',
+	'#40e0d0',
+	'#d575d0',
+	'#e4fefe',
+	'#337f7c',
+	'#e5b827',
+	'#7cb9e1',
+	'#7987ba',
+	'#575add'
+);
+?>

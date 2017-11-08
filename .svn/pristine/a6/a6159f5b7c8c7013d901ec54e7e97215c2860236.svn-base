@@ -1,0 +1,76 @@
+<?php
+class ControllerGprsPayReport extends Controller
+{
+	public function index()
+	{
+		$this->registry->language('gprs/paylog');
+		$this->document->setTitle($this->language->get('text_pay_report'));
+		$this->registry->model('gprs/paylog');
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_pay_report'),
+			'href'      => $this->url->link('gprs/pay_report'),
+			'separator' => ' :: '
+		);
+
+		$this->registry->model('user/user');
+		$vrs['orgs']       = $this->model_user_user->getOrgs();
+		$page              = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data              = array(
+			'start'             => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'             => $this->config->get('config_admin_limit'),
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_pay_method' => $this->request->get_var('pay_method', 'i')
+		);
+		$vrs['org_id']     = $data['filter_org_id'];
+		$vrs['pay_method'] = $data['filter_pay_method'];
+
+		$vrs['items'] = $this->model_gprs_paylog->getPayReport($data);
+		$vrs['total'] = $this->model_gprs_paylog->getPayReport($data,'',true);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+		$url .= isset($this->request->get['card_iccid']) ? '&card_iccid=' . $this->request->get['card_iccid'] : '';
+		$url .= isset($this->request->get['pay_method']) ? '&pay_method=' . $this->request->get['pay_method'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_paylog->getPayReport($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/pay_report', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/pay_report.tpl', $vrs);
+	}
+}
+?>

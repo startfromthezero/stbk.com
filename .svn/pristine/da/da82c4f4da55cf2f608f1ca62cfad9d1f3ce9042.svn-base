@@ -1,0 +1,194 @@
+<?php
+class ControllerGprsAbnormal extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_card_abnormal'));
+		$this->registry->model('gprs/card');
+
+		return $this->getList();
+	}
+
+	/*
+	 * 导出异常卡数据，存为csv文件
+	 */
+	public function export()
+	{
+		$this->registry->language('gprs/card');
+		$this->document->setTitle($this->language->get('text_card_abnormal'));
+		$this->registry->model('gprs/card');
+
+		if ($this->user->hasPermission('modify', 'gprs/abnormal'))
+		{
+			if (!isset($this->request->post['selected']) || empty($this->request->post['selected']))
+			{
+				$data   = array(
+					'filter_org_id'      => $this->request->get_var('filter_org_id', 'i'),
+					'filter_difference'  => $this->request->get_var('filter_difference', 'f', '', '10'),
+					'filter_card_iccid'  => $this->request->get_var('card_iccid'),
+					'filter_unicom_stop' => isset($this->request->get['unicom_stop']) ? $this->request->get_var('unicom_stop', 'i') : ''
+				);
+				$result = $this->model_gprs_card->getItems($data);
+				if(empty($result))
+				{
+					/**
+					 * 连接组合处理
+					 */
+					$url = '';
+					$url .= isset($this->request->post['sort']) ? $this->request->post['sort'] : '';
+					$url .= isset($this->request->post['order']) ? $this->request->post['order'] : 'ASC';
+					$url .= isset($this->request->post['page']) ? (int)$this->request->post['page'] : 1;
+					$url .= isset($this->request->post['filter_org_id']) ? '&filter_org_id=' . $this->request->post['filter_org_id'] : '';
+					$url .= isset($this->request->post['filter_difference']) ? '&filter_difference=' . $this->request->post['filter_difference'] : '';
+					$url .= isset($this->request->post['card_iccid']) ? '&card_iccid=' . $this->request->post['card_iccid'] : '';
+					$url .= isset($this->request->post['unicom_stop']) ? '&unicom_stop=' . $this->request->post['unicom_stop'] : '';
+
+					$this->session->data['error'] = $this->language->get('error_export_empty');
+					$this->registry->redirect($this->url->link('gprs/abnormal', $url, true));
+				}
+			}
+			else
+			{
+				$result = $this->model_gprs_card->get($this->request->get_var('selected', 'a'));
+			}
+
+			$str = "ICCID,平台使用总流量(MB),联通使用总流量(MB),流量差异值(MB),剩余流量(MB),累记充值流量(MB)\n";
+			$str = iconv('utf-8', 'gb2312', $str);
+			foreach ($result as $card)
+			{
+				$str .= "\t{$card['card_iccid']},{$card['used_total']},{$card['unicom_total']},{$card['difference']},{$card['max_unused']},\t{$card['pay_total']}\n";
+			}
+
+			$this->response->addheader('Pragma: public');
+			$this->response->addheader('Expires: 0');
+			$this->response->addheader('Content-Description: File Transfer');
+			$this->response->addheader('Content-Type: text/csv');
+			$this->response->addheader('Content-Disposition: attachment; filename=' . date('Y-m-d_H-i-s', time()) . '_export.csv');
+			$this->response->addheader('Content-Transfer-Encoding: binary');
+
+			return $str;
+		}
+		else
+		{
+			$this->session->data['error'] = $this->language->get('error_permission');
+			$this->registry->redirect($this->url->link('gprs/abnormal'));
+		}
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs   = $this->language->data;
+		$sort  = isset($this->request->get['sort']) ? $this->request->get['sort'] : '';
+		$order = isset($this->request->get['order']) ? $this->request->get['order'] : 'ASC';
+		$page  = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_card_abnormal'),
+			'href'      => $this->url->link('gprs/abnormal'),
+			'separator' => ' :: '
+		);
+
+		if (isset($this->session->data['error']))
+		{
+			$vrs['error_warning'] = $this->session->data['error'];
+			unset($this->session->data['error']);
+		}
+		else
+		{
+			$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+		}
+
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+		$vrs['export'] = $this->url->link('gprs/abnormal/export');
+
+		/*
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$data = array(
+			'sort'               => $sort,
+			'order'              => $order,
+			'start'              => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'              => $this->config->get('config_admin_limit'),
+			'filter_org_id'      => $this->request->get_var('filter_org_id', 'i'),
+			'filter_difference'  => $this->request->get_var('filter_difference', 'f', '', '10'),
+			'filter_card_iccid'  => trim($this->request->get_var('card_iccid')),
+			'filter_unicom_stop' => isset($this->request->get['unicom_stop']) ? $this->request->get_var('unicom_stop', 'i') : ''
+		);
+
+		$vrs['filter_org_id']     = $data['filter_org_id'];
+		$vrs['filter_difference'] = $data['filter_difference'];
+		$vrs['card_iccid']        = $data['filter_card_iccid'];
+		$vrs['unicom_stop']       = $data['filter_unicom_stop'];
+
+		$vrs['items'] = $this->model_gprs_card->getItems($data);
+
+		$url = ($order == 'ASC') ? '&order=DESC' : '&order=ASC';
+		$url .= isset($this->request->get['filter_org_id']) ? '&filter_org_id=' . $this->request->get['filter_org_id'] : '';
+		$url .= isset($this->request->get['filter_difference']) ? '&filter_difference=' . $this->request->get['filter_difference'] : '';
+		$url .= isset($this->request->get['card_iccid']) ? '&card_iccid=' . $this->request->get['card_iccid'] : '';
+		$url .= isset($this->request->get['unicom_stop']) ? '&unicom_stop=' . $this->request->get['unicom_stop'] : '';
+
+		$vrs['sort_difference']   = $this->url->link('gprs/abnormal', 'sort=difference' . $url, true);
+		$vrs['sort_unicom_total'] = $this->url->link('gprs/abnormal', 'sort=unicom_total' . $url, true);
+		$vrs['sort_used_total']   = $this->url->link('gprs/abnormal', 'sort=used_total' . $url, true);
+		$vrs['sort_max_unused']   = $this->url->link('gprs/abnormal', 'sort=max_unused' . $url, true);
+		$vrs['sort_pay_total']    = $this->url->link('gprs/abnormal', 'sort=pay_total' . $url, true);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= $sort ? '&sort=' . $sort : '';
+		$url .= $order ? '&order=' . $order : '';
+		$url .= isset($this->request->get['filter_org_id']) ? '&filter_org_id=' . $this->request->get['filter_org_id'] : '';
+		$url .= isset($this->request->get['filter_difference']) ? '&filter_difference=' . $this->request->get['filter_difference'] : '';
+		$url .= isset($this->request->get['card_iccid']) ? '&card_iccid=' . $this->request->get['card_iccid'] : '';
+		$url .= isset($this->request->get['unicom_stop']) ? '&unicom_stop=' . $this->request->get['unicom_stop'] : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_gprs_card->getItems($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/abnormal', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+		$vrs['sort']       = $sort;
+		$vrs['order']      = $order;
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/abnormal.tpl', $vrs);
+	}
+
+}
+?>

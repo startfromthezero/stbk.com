@@ -1,0 +1,222 @@
+<?php
+class ControllerGprsStats extends Controller
+{
+	private $error = array();
+
+	public function index()
+	{
+		$this->registry->language('gprs/stats');
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->registry->model('gprs/stats');
+
+		return $this->getList();
+	}
+
+	/**
+	 *导出月使用流量统计
+	 *
+	 * @return string
+	 */
+	public function export()
+	{
+		$this->registry->language('gprs/stats');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/stats');
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$orgs = $this->model_user_user->getOrgs();
+
+		if ($this->user->hasPermission('modify', 'gprs/stats'))
+		{
+			$vrs['mdates'] = $this->model_gprs_stats->getMonths(); //获取月份
+			$mdate         = $this->request->post['mdate'];
+			$data          = array(
+				'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+				'filter_card_iccid' => $this->request->get_var('card_iccid'),
+				'filter_mdate'      => $mdate != '*' ? $vrs['mdates'][$mdate]['how_month'] : '',
+			);
+
+			$items = $this->model_gprs_stats->getItems($data);
+			if (empty($items))
+			{
+				/**
+				 * 连接组合处理
+				 */
+				$url = '';
+				$url .= isset($this->request->post['org_id']) ? '&org_id=' . $this->request->post['org_id'] : '';
+				$url .= isset($this->request->post['card_iccid']) ? '&card_iccid=' . $this->request->post['card_iccid'] : '';
+				$url .= $mdate != '*' ? '&mdate=' . $mdate : '';
+
+				$this->session->data['error'] = $this->language->get('error_export_empty');
+				$this->registry->redirect($this->url->link('gprs/stats', $url, true));
+			}
+
+			$str = "卡ICCID,所属机构,月份,月使用流量,月超标流量\n";
+
+			foreach ($items as $item)
+			{
+				$str .= "\t{$item['card_iccid']},{$orgs[$item['org_id']]},{$item['how_month']},{$item['month_used']},\t{$item['month_over']}\n";
+			}
+
+			$this->response->addheader('Pragma: public');
+			$this->response->addheader('Expires: 0');
+			$this->response->addheader('Content-Description: File Transfer');
+			$this->response->addheader('Content-Type: text/csv');
+			$this->response->addheader('Content-Disposition: attachment; filename=' . date('Y-m-d_H-i-s', time()) . '_export.csv');
+			$this->response->addheader('Content-Transfer-Encoding: binary');
+
+			return iconv('utf-8', 'gb2312', $str);
+		}
+		else
+		{
+			$this->session->data['error'] = $this->language->get('error_permission');
+			$this->registry->redirect($this->url->link('gprs/stats'));
+		}
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/stats'),
+			'separator' => ' :: '
+		);
+
+		if (isset($this->session->data['error']))
+		{
+			$vrs['error_warning'] = $this->session->data['error'];
+			unset($this->session->data['error']);
+		}
+		else
+		{
+			$vrs['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+		}
+
+		$vrs['success'] = '';
+		if (isset($this->session->data['success']))
+		{
+			$vrs['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		}
+		$vrs['export'] = $this->url->link('gprs/stats/export');
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		$vrs['mdates'] = $this->model_gprs_stats->getMonths(); //获取月份
+
+		$mdate             = isset($this->request->get['mdate']) ? $this->request->get['mdate'] : '';
+		$page              = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data              = array(
+			'start'             => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'             => $this->config->get('config_admin_limit'),
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_card_iccid' => $this->request->get_var('card_iccid'),
+			'filter_mdate'      => $mdate !== '' ? $vrs['mdates'][$mdate]['how_month'] : $mdate,
+		);
+		$vrs['mdate']      = $mdate;
+		$vrs['org_id']     = $data['filter_org_id'];
+		$vrs['card_iccid'] = $data['filter_card_iccid'];
+		$vrs['items']      = $this->model_gprs_stats->getItems($data);
+		$vrs['num']        = $this->model_gprs_stats->getNum($data);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+		$url .= isset($this->request->get['card_iccid']) ? '&card_iccid=' . $this->request->get['card_iccid'] : '';
+		$url .= isset($mdate) ? '&mdate=' . $mdate : '';
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->page  = $page;
+		$pagination->total = $this->model_gprs_stats->getItems($data, true);
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/stats', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/stats.tpl', $vrs);
+	}
+
+	/**
+	 * 流量图表统计
+	 */
+	public function chart()
+	{
+		/**
+		 * 获取一共有多少月份,如果月份大于9个月,则只选择最近的9个月
+		 */
+		$this->registry->model('gprs/stats');
+
+		$months = $this->model_gprs_stats->getMonths();
+		$count  = count($months) <= 9 ? count($months) : 9;
+
+		/**
+		 * 提取最近的几个月信息(最多为9个月)
+		 */
+		$tmp_forwardmonth  = array();
+		$vrs['last_month'] = $lastmonth = $months[0]['how_month'];
+
+		$last_used = $this->model_gprs_stats->getMonthUsed($lastmonth);
+		$last_over = $this->model_gprs_stats->getMonthOver($lastmonth);
+		$last_orgs = $this->model_gprs_stats->getOrgs($lastmonth);
+
+		$vrs['last_used'] = !empty($last_used) ? json_encode(array_values($last_used)) : 'null';
+		$vrs['last_over'] = !empty($last_over) ? json_encode(array_values($last_over)) : 'null';
+		$vrs['last_orgs'] = !empty($last_orgs) ? json_encode(array_values($last_orgs)) : 'null';
+
+		array_push($tmp_forwardmonth, date('Y-m-d', mktime(0, 0, 0, substr($lastmonth, 4, 2), 1, substr($lastmonth, 0, 4))));
+
+		if ($count > 1)
+		{
+			for ($i = $count - 1; $i > 0; $i--)
+			{
+				$date[$i] = $months[$i]['how_month'];
+				$used     = $this->model_gprs_stats->getMonthUsed($date[$i]);
+				$over     = $this->model_gprs_stats->getMonthOver($date[$i]);
+				$orgs     = $this->model_gprs_stats->getOrgs($date[$i]);
+
+				$tmp_forwardmonth[] = date('Y-m-d', mktime(0, 0, 0, substr($date[$i], 4, 2), 1, substr($date[$i], 0, 4)));
+				$vrs['options'][]   = "{title:{'text':'" . $date[$i] . "流量使用情况'},
+				xAxis:{'data':" . json_encode(array_values($orgs)) . "},
+				series:[{'data':" . json_encode(array_values($used)) . "},{'data':" . json_encode(array_values($over)) . "}]},";
+			};
+		}
+
+		$vrs['month'] = json_encode($tmp_forwardmonth);
+
+		return $this->view('template/gprs/stats_chart.tpl', $vrs);
+	}
+}
+?>

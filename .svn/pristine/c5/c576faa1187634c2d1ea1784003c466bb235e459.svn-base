@@ -1,0 +1,170 @@
+<?php
+/**
+ * 公共类函数
+ * $Id$
+ */
+class modules_funs
+{
+	/**
+	 * 获取完整的URL地址
+	 *
+	 * @param string $url URL地址
+	 * @return string 完整URL地址
+	 */
+	public static function getFullUrl($url)
+	{
+		if (empty($url))
+		{
+			return '';
+		}
+
+		if (strpos($url, '://') === false)
+		{
+			$url = OSS_IMG_DOMAIN . $url;
+		}
+		else
+		{
+			$url .= '?';
+		}
+
+		return $url;
+	}
+
+	/**
+	 * 流量值自动单位转换
+	 *
+	 * @param float $gprs 流量值
+	 * @return string 带单位流量值
+	 */
+	public static function gpgsFormat($gprs)
+	{
+		$GB = 1024;
+		$TB = 1024 * 1024;
+
+		if (abs($gprs) < $GB)
+		{
+			$gprs = round($gprs, 2) . '<b style="color:#008000"> M</b>';
+		}
+		else if (abs($gprs) >= $GB && $gprs < $TB)
+		{
+			$gprs = round($gprs / $GB, 2) . '<b style="color:#0000FF"> G</b>';
+		}
+		else if (abs($gprs) >= $TB)
+		{
+			$gprs = round($gprs / $TB, 2) . '<b style="color:#FF0000"> T</b>';
+		}
+
+		return $gprs;
+	}
+
+	/**
+	 * 判断流量套餐包年或包月
+	 *
+	 * @param $gprs_total
+	 * @param $allot_month
+	 * @param $allot_value
+	 * @return string
+	 */
+	public static function packShow($gprs_total, $allot_month,$allot_value)
+	{
+		if ($allot_month == 1)
+		{
+			$result = self::gpgsFormat($gprs_total)."一年（包年套餐）";
+		}
+		elseif($allot_month == 6)
+		{
+			$result = self::gpgsFormat($gprs_total) . "半年（每月". self::gpgsFormat($allot_value).'）';
+		}
+		else
+		{
+			$result = self::gpgsFormat($gprs_total) . "一年（每月" . self::gpgsFormat($allot_value) . '）';
+		}
+
+		return $result;
+	}
+
+	/**
+	 * 根据套餐分配流量
+	 *
+	 * @param modules_mem $mem     缓存操作对象
+	 * @param integer     $card_id 流量卡编号
+	 */
+	public static function gprsAllot(&$mem, $card_id = 0)
+	{
+		$mdb = $mem->mdb();
+		$mdb->query('SET AUTOCOMMIT=0');
+
+		/**
+		 * 获取所有未过期的套餐记录,根据这些记录处理流量分配
+		 */
+		$where = !empty($card_id) ? "card_id = '{$card_id}' AND " : '';
+		$sql   = "SELECT * FROM cc_gprs_allot WHERE {$where} time_expire > NOW() ORDER BY allot_id ASC";
+		$lres  = $mdb->fetch_all($sql);
+		if (!empty($lres))//分配流量
+		{
+			$curt_month = date('Ym');//当月
+			$last_month = date('Ym', strtotime('last month'));//上月
+			foreach ($lres as $lv)
+			{
+				$sql = "SELECT * FROM cc_gprs_value WHERE card_id = '{$lv['card_id']}' AND allot_id = '{{$lv['allot_id']}}'	AND how_month IN ({$last_month}, {$curt_month})";
+				$res = $mem->hash_sql($sql, 'how_month');
+				if (isset($res[$curt_month]))//判断当前月是否已分配流量,如果已分配则无需分配
+				{
+					continue;
+				}
+
+				/**
+				 * 流量分配计算
+				 */
+				$drs = array(
+					'card_id'       => $lres['card_id'],
+					'allot_id'      => $lres['allot_id'],
+					'time_expire'   => $lres['time_expire'],
+					'gprs_value'    => 0,
+					'balance_dval'  => 0,
+					'balance_value' => 0,
+				);
+				$res = isset($res[$last_month]) ? $res[$last_month] : $drs;
+				unset($res['gprs_vid']);
+				$res['time_added']  = 'dbf|NOW()';
+				$res['time_modify'] = 'dbf|NULL';
+				$res['how_month']   = $curt_month;
+
+				/**
+				 * 判断是否还有未分配的流量
+				 */
+				if ($lres['assigned_month'] < $lres['allot_month'])
+				{
+					$res['gprs_value']    = ($lres['allot_reset'] && $res['gprs_value'] >= 0) ? $lres['allot_value'] : ($res['gprs_value'] + $lres['allot_value']);
+					$res['balance_dval']  = ($lres['allot_reset'] && $res['balance_dval'] >= 0) ? $lres['allot_value'] : ($res['balance_dval'] + $lres['allot_value']);
+					$res['balance_value'] = ($lres['allot_reset'] && $res['balance_value'] >= 0) ? $lres['allot_value'] : ($res['balance_value'] + $lres['allot_value']);
+
+					/**
+					 * 流量分配存储与更新分配次数
+					 */
+					$mdb->query('START TRANSACTION');
+					if ($mdb->insert('cc_gprs_value', $res))
+					{
+						if ($mdb->query("UPDATE cc_gprs_allot SET assigned_month = assigned_month + 1 WHEN allot_id = '{$lres['allot_id']}'"))
+						{
+							$mdb->query('COMMIT');
+							file_put_contents(DIR_ROOT . '/system/logs/allot.log', date('Y-m-d H:i:s') . " card id: {$lres['card_id']} and allot id: {$lres['allot_id']} allot succeed\n");
+						}
+					}
+					$mdb->query('ROLLBACK');
+				}
+				else
+				{
+					/**
+					 * 判断年叠加包是否为0，0代表已使用完
+					 */
+					if ($res['balance_dval'] != 0 || $res['balance_value'] != 0)
+					{
+						$mdb->insert('cc_gprs_value', $res);
+					}
+				}
+			}
+		}
+	}
+}
+?>

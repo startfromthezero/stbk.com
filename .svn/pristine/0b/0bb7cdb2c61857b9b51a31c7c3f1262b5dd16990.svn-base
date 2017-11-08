@@ -1,0 +1,90 @@
+-- GPRS
+DROP TABLE `cc_zone`,`cc_country`, `cc_customer_group`,`cc_customer_group_description`,`cc_customer_ip`,`cc_customer_ip_blacklist`;
+
+CREATE TABLE `cc_org` (
+  `org_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '机构编号',
+  `name` varchar(100) NOT NULL DEFAULT '' COMMENT '机构名称',
+  `memo` varchar(255) NOT NULL DEFAULT '' COMMENT '机构描述',
+  `email` varchar(96) NOT NULL DEFAULT '' COMMENT '负责人邮箱',
+  `tel` varchar(15) DEFAULT '' COMMENT '负责人电话',
+  `partner_id` varchar(50) DEFAULT '' COMMENT '合作伙伴编号',
+  `partner_key` varchar(50) DEFAULT '' COMMENT '合作伙伴密匙',
+  `notify_url` varchar(255) NOT NULL DEFAULT '' COMMENT '异步通知地址',
+  `user_num` int(11) NOT NULL COMMENT '可开的账户数量',
+  `time_added` datetime DEFAULT NULL COMMENT '增加时间',
+  `time_modify` datetime DEFAULT NULL COMMENT '修改时间',
+  PRIMARY KEY (`org_id`),
+  UNIQUE KEY `partner_id` (`partner_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='机构管理表';
+
+DELETE FROM `cc_setting` WHERE `group` != 'config' AND `group` != 'wxpay';
+ALTER TABLE `cc_setting` DROP COLUMN `setting_id`;
+ALTER TABLE `cc_setting` ADD COLUMN `setting_id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY(`setting_id`);
+
+ALTER TABLE `cc_gprs_alert` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_batch` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_card` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_pack` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_pay` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_ota` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_ota_device` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+ALTER TABLE `cc_gprs_czk` CHANGE `user_id` `org_id` INT(11) DEFAULT 0 NOT NULL COMMENT '机构编号'; 
+
+ALTER TABLE `cc_gprs_card` DROP COLUMN `device_id`;
+ALTER TABLE `cc_gprs_log` DROP COLUMN `device_id`;
+ALTER TABLE `cc_gprs_pay` DROP COLUMN `device_id`;
+ALTER TABLE `cc_gprs_pay` DROP COLUMN `customer_id`;
+ALTER TABLE `cc_gprs_czk` DROP COLUMN `device_id`;
+DROP TABLE `cc_gprs_yck`;
+
+-- New DB GPRS
+CREATE DATABASE `gprs`CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE TABLE gprs.cc_currency LIKE clw_tran.cc_currency;
+INSERT INTO gprs.cc_currency SELECT * FROM clw_tran.cc_currency;
+CREATE TABLE gprs.cc_extension LIKE clw_tran.cc_extension;
+INSERT INTO gprs.cc_extension SELECT * FROM clw_tran.cc_extension;
+CREATE TABLE gprs.cc_gprs_alert LIKE clw_tran.cc_gprs_alert;
+INSERT INTO gprs.cc_gprs_alert SELECT * FROM clw_tran.cc_gprs_alert;
+CREATE TABLE gprs.cc_gprs_batch LIKE clw_tran.cc_gprs_batch;
+INSERT INTO gprs.cc_gprs_batch SELECT * FROM clw_tran.cc_gprs_batch;
+CREATE TABLE gprs.cc_gprs_card LIKE clw_tran.cc_gprs_card;
+INSERT INTO gprs.cc_gprs_card SELECT * FROM clw_tran.cc_gprs_card;
+CREATE TABLE gprs.cc_gprs_czk LIKE clw_tran.cc_gprs_czk;
+INSERT INTO gprs.cc_gprs_czk SELECT * FROM clw_tran.cc_gprs_czk;
+CREATE TABLE gprs.cc_gprs_log LIKE clw_tran.cc_gprs_log;
+INSERT INTO gprs.cc_gprs_log SELECT * FROM clw_tran.cc_gprs_log;
+CREATE TABLE gprs.cc_gprs_pack LIKE clw_tran.cc_gprs_pack;
+INSERT INTO gprs.cc_gprs_pack SELECT * FROM clw_tran.cc_gprs_pack;
+CREATE TABLE gprs.cc_gprs_pay LIKE clw_tran.cc_gprs_pay;
+INSERT INTO gprs.cc_gprs_pay SELECT * FROM clw_tran.cc_gprs_pay;
+CREATE TABLE gprs.cc_gprs_stats LIKE clw_tran.cc_gprs_stats;
+INSERT INTO gprs.cc_gprs_stats SELECT * FROM clw_tran.cc_gprs_stats;
+CREATE TABLE gprs.cc_language LIKE clw_tran.cc_language;
+INSERT INTO gprs.cc_language SELECT * FROM clw_tran.cc_language;
+CREATE TABLE gprs.cc_nation LIKE clw_tran.cc_nation;
+INSERT INTO gprs.cc_nation SELECT * FROM clw_tran.cc_nation;
+CREATE TABLE gprs.cc_org LIKE clw_tran.cc_org;
+INSERT INTO gprs.cc_org SELECT * FROM clw_tran.cc_org;
+CREATE TABLE gprs.cc_ota LIKE clw_tran.cc_ota;
+INSERT INTO gprs.cc_ota SELECT * FROM clw_tran.cc_ota;
+CREATE TABLE gprs.cc_ota_device LIKE clw_tran.cc_ota_device;
+INSERT INTO gprs.cc_ota_device SELECT * FROM clw_tran.cc_ota_device;
+CREATE TABLE gprs.cc_setting LIKE clw_tran.cc_setting;
+INSERT INTO gprs.cc_setting SELECT * FROM clw_tran.cc_setting;
+CREATE TABLE gprs.cc_store LIKE clw_tran.cc_store;
+INSERT INTO gprs.cc_store SELECT * FROM clw_tran.cc_store;
+CREATE TABLE gprs.cc_user LIKE clw_tran.cc_user;
+INSERT INTO gprs.cc_user SELECT * FROM clw_tran.cc_user;
+CREATE TABLE gprs.cc_user_group LIKE clw_tran.cc_user_group;
+INSERT INTO gprs.cc_user_group SELECT * FROM clw_tran.cc_user_group;
+CREATE TABLE gprs.session_mem LIKE clw_tran.session_mem;
+INSERT INTO gprs.session_mem SELECT * FROM clw_tran.session_mem;
+CREATE TABLE gprs.session_wcore LIKE clw_tran.session_wcore;
+INSERT INTO gprs.session_wcore SELECT * FROM clw_tran.session_wcore;
+
+-- Remove cyagps DB some tables
+DROP TABLE `cc_currency`,`cc_extension`,`cc_gprs_alert`,`cc_gprs_batch`,`cc_gprs_card`,`cc_gprs_czk`,`cc_gprs_log`,
+`cc_gprs_pack`,`cc_gprs_pay`,`cc_gprs_stats`,`cc_gprs_yck`,`cc_nation`,`cc_org`,`cc_user`,`cc_user_group`;
+DELETE FROM `cc_setting` WHERE `group` != 'config';
+ALTER TABLE `cc_setting` DROP COLUMN `setting_id`;
+ALTER TABLE `cc_setting` ADD COLUMN `setting_id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY(`setting_id`);

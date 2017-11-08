@@ -1,0 +1,318 @@
+<?php
+class ModelGprsPaylog extends Model
+{
+	/**
+	 * @var string 此库要操作的表
+	 */
+	private $_opt = 'cc_gprs_pay';
+
+	/**
+	 * 统计付款方式的数据
+	 *
+	 * @return mixed
+	 */
+	public function getMethodChart($data = array())
+	{
+		$sql = "SELECT COUNT(*) as value,P.pay_method as name,SUM(P.gprs_price) as price FROM {$this->_opt} P
+				LEFT JOIN cc_gprs_card C ON P.card_id = C.card_id WHERE P.pay_id != 0 ";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '' : " AND org_id = '{$this->user->getId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		$sql .= " GROUP BY P.pay_method";
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 统计支付状态的数据
+	 *
+	 * @return mixed
+	 */
+	public function getPaidChart($data = array())
+	{
+		$sql = "SELECT COUNT(*) as value,P.is_paid as name FROM {$this->_opt} P
+				LEFT JOIN cc_gprs_card C ON P.card_id = C.card_id WHERE pay_id != 0 ";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '' : " AND org_id = '{$this->user->getId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		$sql .= "GROUP BY is_paid";
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 充值与报表
+	 *
+	 * @param array $data
+	 * @return mixed
+	 */
+	public function getPayReport($data = array(), $just_total = false)
+	{
+		$sql = "SELECT count(is_paid) ,SUM(IF (is_paid = 1,1,0)) AS paid_amount,
+				SUM(IF (is_paid = 0,1,0))  AS nopaid_amount,
+				SUM(IF (is_paid = 1, gprs_price, 0)) AS paid_total,
+				SUM(IF (is_paid = 0, gprs_price, 0)) AS nopaid_total, org_id,pay_method
+				FROM {$this->_opt} WHERE pay_id != 0";
+		$sql .= $this->user->getGroupId() <= 1 ? '' : " AND org_id = '{$this->user->getId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		$sql .= " GROUP BY org_id,pay_method";
+
+		//判断是否仅获取条数
+		if ($just_total)
+		{
+			return $this->sdb()->num_rows($this->sdb()->fetch_all($sql));
+		}
+
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 获取充值分析数据
+	 *
+	 * @param array $data
+	 * @return mixed
+	 */
+	public function getLog($data = array())
+	{
+		$sql = "SELECT SUM(IF (P.is_paid = 1,1,0)) AS paid_amount,
+				SUM(IF (P.is_paid = 0,1,0)) AS nopaid_amount,
+				SUM(IF (P.is_paid = 1, P.gprs_price, 0)) AS paid_total,
+				SUM(IF (P.is_paid = 0, P.gprs_price, 0)) AS nopaid_total, P.org_id
+				FROM {$this->_opt} P
+				LEFT JOIN `cc_gprs_card` C ON P.card_id = C.card_id WHERE P.pay_id != 0";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '' : " AND P.org_id = '{$this->user->getId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		$sql .= " GROUP BY P.org_id";
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 获取流量卡的充值记录
+	 *
+	 * @param array $data       查询与分页
+	 * @param bool  $just_total 仅获取数量
+	 * @return array mixed      充值的列表记录
+	 */
+	public function getPayList($data = array(), $just_total = false)
+	{
+		$sql = "SELECT P.*,C.card_iccid FROM {$this->_opt} P LEFT JOIN `cc_gprs_card` C ON P.card_id = C.card_id WHERE P.pay_id != 0 ";
+		$sql .= $this->user->getGroupId() <= 1 ? '' : " AND P.org_id = '{$this->user->getId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		//判断是否仅获取条数
+		if ($just_total)
+		{
+			return $this->sdb()->fetch_one(str_replace(' P.*', ' COUNT(P.pay_id) ', $sql));
+		}
+
+		//根据分页情况获取数据
+		$sql .= " ORDER BY P.time_added DESC";
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+}
+?>

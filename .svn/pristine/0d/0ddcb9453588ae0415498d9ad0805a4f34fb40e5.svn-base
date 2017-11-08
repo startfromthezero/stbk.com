@@ -1,0 +1,129 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a
+				href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?>
+	<div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $heading_title; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<?php if ($mpermission) { ?>
+				<a onclick="$('form').submit();" class="button btn-yellow"><?php echo $button_export; ?></a>
+				<a href="javascript:showDetails()" class="button btn-pink"><?php echo $button_chart; ?></a><?php } ?>
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/stats" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<form action="<?php echo $export; ?>" method="post" enctype="multipart/form-data" id="form">
+			<?php if(isset($num['mu']) && isset($num['mo'])) { ?>
+			<table class="find">
+				<tbody>
+				<tr>
+					<td width="30%"><?php echo $text_used_total; ?>：<?php echo modules_funs::gpgsFormat($num['mu']); ?></td>
+					<td><?php echo $text_exceede_total; ?>：<?php echo modules_funs::gpgsFormat($num['mo']); ?></td>
+				</tr>
+				</tbody>
+			</table>
+			<?php } ?>
+				<table class="list">
+					<thead>
+					<tr>
+						<td><?php echo $text_card_iccid; ?></td>
+						<td><?php echo $text_user_firstname; ?></td>
+						<td><?php echo $text_how_month; ?></td>
+						<td><?php echo $text_month_used; ?></td>
+						<td><?php echo $text_month_over; ?></td>
+					</tr>
+					</thead>
+					<tbody>
+					<tr class="filter center">
+						<td><input type="text" name="card_iccid" value="<?php echo !empty($card_iccid) ? $card_iccid : ''; ?>" size="3" /></td>
+						<td>
+							<select name="org_id">
+								<option value="*"></option>
+								<?php foreach ($orgs as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($k == $org_id) { ?>selected="selected" <?php } ?>><?php echo $v; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td>
+							<select name="mdate">
+								<option value="*"></option>
+								<?php foreach ($mdates as $k => $v) { ?>
+								<option value="<?php echo $k; ?>"
+								<?php if ($mdate !== '' && $k == $mdate) { ?> selected="selected"<?php } ?>><?php echo $v['how_month']; ?></option>
+								<?php } ?>
+							</select>
+						</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<?php if (!empty($items)) { ?>
+					<?php foreach ($items as $item) { ?>
+					<tr>
+						<td><?php echo $item['card_iccid']; ?></td>
+						<td><?php echo $orgs[$item['org_id']]; ?></td>
+						<td><?php echo $item['how_month']; ?></td>
+						<td><?php echo modules_funs::gpgsFormat($item['month_used']); ?></td>
+						<td><?php echo modules_funs::gpgsFormat($item['month_over']); ?></td>
+					</tr>
+					<?php } ?>
+					<?php } else { ?>
+					<tr>
+						<td class="center" colspan="7"><?php echo $text_no_results; ?></td>
+					</tr>
+					<?php } ?>
+					</tbody>
+				</table>
+			</form>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+
+function filter()
+{
+	var url = '/gprs/stats?';
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += '&org_id=' + org_id;
+	}
+
+	var card_iccid = $('input[name=\'card_iccid\']').val();
+	if (card_iccid)
+	{
+		url += '&card_iccid=' + encodeURIComponent(card_iccid);
+	}
+
+	var mdate = $('select[name=\'mdate\']').val();
+	if (mdate != '*')
+	{
+		url += '&mdate=' + mdate;
+	}
+
+	location = url;
+}
+
+function showDetails()
+{
+	var $url = '/gprs/stats/chart';
+	$.fn.tboxy({title: '月流量统计图表', width: '900px', value: {type: 'url', val: $url}});
+}
+</script><?php echo $page_footer; ?>

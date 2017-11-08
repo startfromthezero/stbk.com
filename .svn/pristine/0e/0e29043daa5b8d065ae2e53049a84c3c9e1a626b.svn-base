@@ -1,0 +1,165 @@
+<?php
+class ControllerGprsPayLog extends Controller
+{
+	public function index()
+	{
+		$this->registry->language('gprs/paylog');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->registry->model('gprs/paylog');
+
+		return $this->getList();
+	}
+
+	private function getList()
+	{
+		$this->registry->language('gprs/paylog');
+		$this->document->setTitle($this->language->get('heading_title'));
+		$vrs = $this->language->data;
+
+		/**
+		 * 导航栏组合
+		 */
+		$vrs['breadcrumbs']   = array();
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),
+			'separator' => false
+		);
+
+		$vrs['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('gprs/paylog'),
+			'separator' => ' :: '
+		);
+
+		/**
+		 * 获取机构
+		 */
+		$this->registry->model('user/user');
+		$vrs['orgs'] = $this->model_user_user->getOrgs();
+
+		/**
+		 * 获取流量套装
+		 */
+		$this->registry->model('gprs/pack');
+		$vrs['pack'] = $this->model_gprs_pack->getPack();
+		$pack_id     = $this->request->get_var('pack_id');
+
+		$page = isset($this->request->get['page']) ? (int)$this->request->get['page'] : 1;
+		$data = array(
+			'start'              => ($page - 1) * $this->config->get('config_admin_limit'),
+			'limit'              => $this->config->get('config_admin_limit'),
+			'filter_org_id'      => $this->request->get_var('org_id', 'i'),
+			'filter_card_iccid'  => $this->request->get_var('card_iccid'),
+			'filter_pay_method'  => $this->request->get_var('pay_method', 'i'),
+			'filter_is_paid'     => isset($this->request->get['is_paid']) ? $this->request->get_var('is_paid', 'i') : '',
+			'filter_gprs_amount' => $pack_id ? $vrs['pack'][$pack_id] : '',
+			'filter_date_start'  => $this->request->get_var('date_start'),
+			'filter_date_end'    => $this->request->get_var('date_end'),
+			'paid_date_start'    => $this->request->get_var('paid_date_start'),
+			'paid_date_end'      => $this->request->get_var('paid_date_end')
+		);
+
+		$vrs['date_start']      = $data['filter_date_start'];
+		$vrs['date_end']        = $data['filter_date_end'];
+		$vrs['paid_date_start'] = $data['paid_date_start'];
+		$vrs['paid_date_end']   = $data['paid_date_end'];
+		$vrs['card_iccid']      = $data['filter_card_iccid'];
+		$vrs['org_id']          = $data['filter_org_id'];
+		$vrs['pay_method']      = $data['filter_pay_method'];
+		$vrs['is_paid']         = $data['filter_is_paid'];
+		$vrs['pack_id']         = $pack_id;
+
+		$vrs['items'] = $this->model_gprs_paylog->getPayList($data);
+		$vrs['log']   = $this->model_gprs_paylog->getLog($data);
+
+		/**
+		 * 连接组合处理
+		 */
+		$url = '';
+		$url .= isset($this->request->get['org_id']) ? '&org_id=' . $this->request->get['org_id'] : '';
+		$url .= isset($this->request->get['card_iccid']) ? '&card_iccid=' . $this->request->get['card_iccid'] : '';
+		$url .= isset($this->request->get['pay_method']) ? '&pay_method=' . $this->request->get['pay_method'] : '';
+		$url .= isset($this->request->get['pack_id']) ? '&pack_id=' . $this->request->get['pack_id'] : '';
+		$url .= isset($this->request->get['is_paid']) ? '&is_paid=' . $this->request->get['is_paid'] : '';
+		$url .= isset($this->request->get['date_start']) ? '&date_start=' . $this->request->get['date_start'] : '';
+		$url .= isset($this->request->get['date_end']) ? '&date_end=' . $this->request->get['date_end'] : '';
+		$url .= isset($this->request->get['paid_date_start']) ? '&paid_date_start=' . $this->request->get['paid_date_start'] : '';
+		$url .= isset($this->request->get['paid_date_end']) ? '&paid_date_end=' . $this->request->get['paid_date_end'] : '';
+		$vrs['url'] = $url;
+
+		/**
+		 * 分页处理
+		 */
+		$pagination        = new Pagination();
+		$pagination->total = $this->model_gprs_paylog->getPayList($data, true);
+		$pagination->page  = $page;
+		$pagination->limit = $this->config->get('config_admin_limit');
+		$pagination->text  = $this->language->get('text_pagination');
+		$pagination->url   = $this->url->link('gprs/paylog', "{$url}&page={page}", true);
+		$vrs['pagination'] = $pagination->render();
+
+		/**
+		 * 模板处理
+		 */
+		$vrs['page_header'] = $this->registry->exectrl('common/page_header');
+		$vrs['page_footer'] = $this->registry->exectrl('common/page_footer');
+
+		return $this->view('template/gprs/paylog.tpl', $vrs);
+	}
+
+	/**
+	 * 充值与分析统计图表
+	 *
+	 */
+	public function chart()
+	{
+		$arr_pay_type = array(
+			'1' => '微信支付',
+			'2' => '支付宝',
+			'3' => '充值卡',
+			'4' => '银行转账'
+		);
+
+		$arr_pay_status = array(
+			'0' => '未付款',
+			'1' => '已付款'
+		);
+
+		$data = array(
+			'filter_org_id'     => $this->request->get_var('org_id', 'i'),
+			'filter_card_iccid' => $this->request->get_var('card_iccid'),
+			'filter_pay_method' => $this->request->get_var('pay_method', 'i'),
+			'filter_is_paid'    => isset($this->request->get['is_paid']) ? $this->request->get_var('is_paid', 'i') : '',
+			'filter_date_start' => $this->request->get_var('date_start'),
+			'filter_date_end'   => $this->request->get_var('date_end'),
+			'paid_date_start'   => $this->request->get_var('paid_date_start'),
+			'paid_date_end'     => $this->request->get_var('paid_date_end')
+		);
+		$this->registry->model('gprs/paylog');
+		$method = $this->model_gprs_paylog->getMethodChart($data);
+		$paid   = $this->model_gprs_paylog->getPaidChart($data);
+
+		$type = array();
+		foreach ($method as $v)
+		{
+			$v['name'] = $arr_pay_type[$v['name']];
+			$type[]    = $v;
+		}
+
+		$status = array();
+		foreach ($paid as $v)
+		{
+			$v['name'] = $arr_pay_status[$v['name']];
+			$status[]  = $v;
+		}
+		$vrs['method'] = json_encode($type);
+		$vrs['paid']   = json_encode($status);
+
+		$vrs['date_start'] = isset($this->request->get['date_start']) ? $this->request->get['date_start'] : '';
+		$vrs['date_end']   = isset($this->request->get['date_end']) ? $this->request->get['date_end'] : '';
+
+		return $this->view('template/gprs/paylog_chart.tpl', $vrs);
+	}
+}
+?>

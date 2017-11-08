@@ -1,0 +1,541 @@
+<?php
+class ModelGprsPaylog extends Model
+{
+	/**
+	 * @var string 此库要操作的表
+	 */
+	private $_opt = 'cc_gprs_pay';
+
+	/**
+	 * 统计付款方式的数据
+	 *
+	 * @return mixed
+	 */
+	public function getMethodChart($data = array())
+	{
+		$sql = "SELECT COUNT(*) as value,P.pay_method as name,SUM(P.gprs_price) as price FROM {$this->_opt} P
+				LEFT JOIN cc_gprs_card C ON P.card_id = C.card_id WHERE ";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '1' : " C.org_id = '{$this->user->getOrgId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if (!empty($data['filter_gprs_amount']))
+		{
+			$sql .= " AND P.gprs_amount = '{$data['filter_gprs_amount']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		$sql .= " GROUP BY P.pay_method";
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 统计支付状态的数据
+	 *
+	 * @return mixed
+	 */
+	public function getPaidChart($data = array())
+	{
+		$sql = "SELECT COUNT(*) as value,P.is_paid as name FROM {$this->_opt} P
+				LEFT JOIN cc_gprs_card C ON P.card_id = C.card_id WHERE ";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '1' : " C.org_id = '{$this->user->getOrgId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if (!empty($data['filter_gprs_amount']))
+		{
+			$sql .= " AND P.gprs_amount = '{$data['filter_gprs_amount']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		$sql .= " GROUP BY is_paid";
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 机构充值统计
+	 *
+	 * @param array $data
+	 * @return mixed
+	 */
+	public function getPayReport($data = array(), $just_total = false, $just_group = false)
+	{
+		$sql = "SELECT count(is_paid) ,SUM(IF (is_paid = 1,1,0)) AS paid_amount,
+				SUM(IF (is_paid = 0,1,0))  AS nopaid_amount,
+				SUM(IF (is_paid = 1, gprs_amount, 0)) AS gprs_count,
+				SUM(IF (is_paid = 1, gprs_price, 0)) AS paid_total,
+				SUM(IF (is_paid = 0, gprs_price, 0)) AS nopaid_total, org_id,pay_method,
+				DATE_FORMAT(time_added,'%Y-%m') AS mdate
+				FROM {$this->_opt} WHERE ";
+		$sql .= $this->user->getGroupId() <= 1 ? '1' : " org_id = '{$this->user->getOrgId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND pay_method = '{$data['filter_pay_method']}'";
+		}
+		if (!empty($data['filter_mdate']))
+		{
+			$sql .= " AND DATE_FORMAT(time_added, '%Y-%m') ='{$data['filter_mdate']}'";
+		}
+
+		//判断是否仅获取总计
+		if (!$just_group)
+		{
+			$sql .= " GROUP BY org_id,pay_method";
+		}
+
+		//判断是否仅获取条数
+		$sdb = $this->sdb();
+		if ($just_total)
+		{
+			$sdb->query($sql);
+
+			return $sdb->num_rows();
+		}
+
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $sdb->fetch_all($sql);
+	}
+
+	/**
+	 * 获取所有机构充值月份
+	 *
+	 * @return mixed
+	 */
+	public function getAllMonth()
+	{
+		$sql = "SELECT COUNT(pay_id),DATE_FORMAT(time_added,'%Y-%m') AS mdate FROM `cc_gprs_pay` GROUP BY mdate";
+
+		return $this->sdb()->fetch_pairs($sql);
+	}
+
+	/**
+	 * 获取充值分析数据
+	 *
+	 * @param array $data
+	 * @return mixed
+	 */
+	public function getLog($data = array())
+	{
+		$sql = "SELECT SUM(IF (P.is_paid = 1,1,0)) AS paid_amount,
+				SUM(IF (P.is_paid = 0,1,0)) AS nopaid_amount,
+				SUM(IF (P.is_paid = 1, P.gprs_price, 0)) AS paid_total,
+				SUM(IF (P.is_paid = 0, P.gprs_price, 0)) AS nopaid_total, P.org_id
+				FROM {$this->_opt} P
+				LEFT JOIN `cc_gprs_card` C ON P.card_id = C.card_id WHERE";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '1' : " C.org_id = '{$this->user->getId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if (!empty($data['filter_gprs_amount']))
+		{
+			$sql .= " AND P.gprs_amount = '{$data['filter_gprs_amount']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		$sql .= " GROUP BY P.org_id";
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 获取流量卡的充值记录
+	 *
+	 * @param array $data       查询与分页
+	 * @param bool  $just_total 仅获取数量
+	 * @return array mixed      充值的列表记录
+	 */
+	public function getPayList($data = array(), $just_total = false)
+	{
+		$sql = "SELECT P.*,C.card_iccid FROM {$this->_opt} P LEFT JOIN `cc_gprs_card` C ON P.card_id = C.card_id WHERE ";
+		$sql .= $this->user->getGroupId() <= 1 ? '1' : " C.org_id = '{$this->user->getId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND P.org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_card_iccid']))
+		{
+			$sql .= " AND C.card_iccid LIKE '%{$data['filter_card_iccid']}%'";
+		}
+
+		if (!empty($data['filter_card_id']))
+		{
+			$sql .= " AND P.card_id = '{$data['filter_card_id']}'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND P.pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		if (!empty($data['filter_gprs_amount']))
+		{
+			$sql .= " AND P.gprs_amount = '{$data['filter_gprs_amount']}'";
+		}
+
+		if ($data['filter_is_paid'] !== '')
+		{
+			$sql .= " AND P.is_paid = '{$data['filter_is_paid']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND P.time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND P.time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['paid_date_start']))
+		{
+			$sql .= " AND P.time_paid >= '{$data['paid_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['paid_date_end']))
+		{
+			$sql .= " AND P.time_paid <= '{$data['paid_date_end']} 23:59:59'";
+		}
+
+		//判断是否仅获取条数
+		if ($just_total)
+		{
+			return $this->sdb()->fetch_one(str_replace(' P.*', ' COUNT(P.pay_id) ', $sql));
+		}
+
+		//根据分页情况获取数据
+		$sql .= " ORDER BY P.time_added DESC";
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 机构的充值总额统计
+	 *
+	 * @param array $data  筛选
+	 * @param bool  $total 总计
+	 * @return mixed
+	 */
+	public function getPayCount($data = array(), $just_total = false, $just_group = false)
+	{
+		$sql = "SELECT org_id,COUNT(pay_id) pay_count,SUM(gprs_amount) gprs_count, SUM(gprs_price) money_count FROM {$this->_opt} WHERE is_paid = 1";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '' : " AND org_id = '{$this->user->getOrgId()}'";
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND time_paid >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND time_paid <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND org_id = '{$data['filter_org_id']}'";
+		}
+
+		//判断是否仅获取总计
+		if (!$just_group)
+		{
+			$sql .= " GROUP BY org_id";
+		}
+
+		//判断是否仅获取条数
+		if ($just_total)
+		{
+			return $this->sdb()->fetch_one("SELECT COUNT(DISTINCT org_id) FROM {$this->_opt} WHERE is_paid = 1");
+		}
+
+		//根据分页情况获取数据
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 获取充值总额统计的图表信息
+	 *
+	 * @param $chart
+	 * @return mixed
+	 */
+	public function getReportChart($chart)
+	{
+		$sql = "SELECT org_id,{$chart} FROM {$this->_opt} WHERE is_paid = 1 GROUP BY org_id";
+
+		return $this->sdb()->fetch_pairs($sql);
+	}
+
+	/**
+	 * 充值月度统计
+	 *
+	 * @param array $data
+	 * @param bool  $just_total
+	 * @return int|mixed
+	 */
+	public function getMonthCount($data = array(), $just_total = false)
+	{
+		$sql = "SELECT org_id,
+				SUM(IF (is_paid = 1, 1, 0)) AS paid_count,
+				SUM(IF (is_paid = 0, 1, 0)) AS nopaid_count,
+				SUM(IF (is_paid = 1, gprs_amount, 0)) AS gprs_count,
+				SUM(IF (is_paid = 1, gprs_price, 0)) AS paid_total,
+				SUM(IF (is_paid = 0, gprs_price, 0)) AS nopaid_total ,
+				DATE_FORMAT(time_added,'%Y-%m') AS mdate FROM {$this->_opt} WHERE ";
+		$sql .= $this->user->getGroupId() <= 1 ? '1' : " org_id = '{$this->user->getOrgId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND org_id = '{$data['filter_org_id']}'";
+		}
+
+		$sql .= ' GROUP BY org_id, mdate';
+
+		if (!empty($data['filter_mdate']))
+		{
+			$sql .= " HAVING mdate ='{$data['filter_mdate']}'";
+		}
+
+		//判断是否仅获取条数
+		$sdb = $this->sdb();
+		if ($just_total)
+		{
+			$sdb->query($sql);
+
+			return $sdb->num_rows();
+		}
+
+		//根据分页情况获取数据
+		if (isset($data['start']) || isset($data['limit']))
+		{
+			$data['start'] = ($data['start'] < 0) ? 0 : (int)$data['start'];
+			$data['limit'] = ($data['limit'] < 1) ? 20 : (int)$data['limit'];
+			$sql .= " LIMIT {$data['start']}, {$data['limit']}";
+		}
+
+		return $sdb->fetch_all($sql);
+	}
+
+	/**
+	 * 充值套餐统计
+	 *
+	 * @param array $data
+	 * @return array mixed
+	 */
+	public function getPayPack($data = array(), $just_group = false)
+	{
+		$sql = "SELECT gprs_price, gprs_amount, CONCAT(gprs_price, '-', gprs_amount) AS gby_name,
+ 				SUM(IF (is_paid = 1, 1, 0)) AS paid_count,
+				SUM(IF (is_paid = 0, 1, 0)) AS nopaid_count,
+				SUM(IF (is_paid = 1, gprs_price, 0)) AS paid_total,
+				SUM(IF (is_paid = 0, gprs_price, 0)) AS nopaid_total FROM {$this->_opt} WHERE ";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '1' : " org_id = '{$this->user->getOrgId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_pay_method']))
+		{
+			$sql .= " AND pay_method = '{$data['filter_pay_method']}'";
+		}
+
+		//判断是否仅获取总计
+		if (!$just_group)
+		{
+			$sql .= ' GROUP BY gby_name ORDER BY gprs_price';
+		}
+
+		return $this->sdb()->fetch_all($sql);
+	}
+
+	/**
+	 * 获取机构续费数量
+	 */
+	public function getRenewal($data = array())
+	{
+		$sql = "SELECT org_id,COUNT(DISTINCT card_id) FROM {$this->_opt} WHERE is_paid = 1";
+
+		$sql .= $this->user->getGroupId() <= 1 ? '' : " AND org_id = '{$this->user->getOrgId()}'";
+
+		if (!empty($data['filter_org_id']))
+		{
+			$sql .= " AND org_id = '{$data['filter_org_id']}'";
+		}
+
+		if (!empty($data['filter_date_start']))
+		{
+			$sql .= " AND time_added >= '{$data['filter_date_start']} 00:00:01'";
+		}
+
+		if (!empty($data['filter_date_end']))
+		{
+			$sql .= " AND time_added <= '{$data['filter_date_end']} 23:59:59'";
+		}
+
+		$sql .= ' GROUP BY org_id';
+
+		return $this->sdb()->fetch_pairs($sql);
+	}
+}
+?>

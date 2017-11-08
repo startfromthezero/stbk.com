@@ -1,0 +1,242 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<div class="box" style="min-height:545px;">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_sell2pay; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/sell2pay" class="button btn-red"><?php echo $button_reset; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<table class="find">
+				<tr>
+					<td width="32%">
+						<?php echo $text_org_name; ?>
+						<select name="org_id">
+							<option value="*"></option>
+							<?php foreach ($orgs as $k => $v) { ?>
+							<option value="<?php echo $k; ?>"
+							<?php if ($k == $org_id) { ?> selected="selected"<?php } ?>
+							><?php echo $v; ?></option>
+							<?php } ?>
+						</select>
+					</td>
+					<td width="32%"><?php echo $text_start_date; ?><input type="text" name="date_start" value="<?php echo $date_start; ?>" id="date-start" size="12" /></td>
+					<td><?php echo $text_end_date; ?><input type="text" name="date_end" value="<?php echo $date_end; ?>" id="date-end" size="12" /></td>
+				</tr>
+			</table>
+			<table class="list">
+				<thead>
+				<tr>
+					<td><?php echo $text_org_name; ?></td>
+					<td><?php echo $text_sell_num; ?></td>
+					<td><?php echo $text_renewal_num; ?></td>
+					<td><?php echo $text_rate; ?></td>
+				</tr>
+				</thead>
+				<tbody>
+				<?php if (!empty($sell) && !empty($renewal)) { ?>
+				<?php foreach ($sell as $k =>$v) { ?>
+				<tr>
+					<td><?php echo $orgs[$k]; ?></td>
+					<td><?php echo $v; ?></td>
+					<td><?php echo $renewal[$k]; ?></td>
+					<td><?php echo (round($renewal[$k]/$v*100,2)).'%'; ?></td>
+				</tr>
+				<?php } ?>
+				<tr>
+					<td><span style="color:blue"><?php echo $text_subtotal; ?></span></td>
+					<td><span style="color:blue"><?php echo $sell_subtotal; ?></span></td>
+					<td><span style="color:blue"><?php echo $renewal_subtotal; ?></span></td>
+					<td><span style="color:blue"><?php echo $rate_subtotal; ?></span></td>
+				</tr>
+				<tr>
+					<td><span class="required"><?php echo $text_total; ?></span></td>
+					<td><span class="required"><?php echo $sell_total; ?></span></td>
+					<td><span class="required"><?php echo $renewal_total; ?></span></td>
+					<td><span class="required"><?php echo $rate_total; ?></span></td>
+				</tr>
+				<?php } else { ?>
+				<tr>
+					<td class="center" colspan="6"><?php echo $text_no_results; ?></td>
+				</tr>
+				<?php } ?>
+				</tbody>
+			</table>
+			<div class="pagination"><?php echo $pagination; ?></div>
+		</div>
+	</div>
+	<?php if (!empty($sell)) { ?>
+	<div id="main" style="height:300px;"></div><!-- ECharts单文件引入 -->
+	<?php } ?>
+</div>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/sell2pay?';
+
+	var org_id = $('select[name=\'org_id\']').val();
+	if (org_id != '*')
+	{
+		url += 'org_id=' + encodeURIComponent(org_id);
+	}
+
+	var date_start = $('input[name=\'date_start\']').val();
+	if (date_start)
+	{
+		url += '&date_start=' + encodeURIComponent(date_start);
+	}
+
+	var date_end = $('input[name=\'date_end\']').val();
+	if (date_end)
+	{
+		url += '&date_end=' + encodeURIComponent(date_end);
+	}
+
+	location = url;
+}
+$('#date-start').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-end').datepicker('option', 'minDate', sltDate);
+	}
+});
+
+$('#date-end').datepicker({
+	dateFormat: 'yy-mm-dd', timeFormat: "HH:mm:ss", numberOfMonths: 1, onClose: function (sltDate)
+	{
+		$('#date-start').datepicker('option', 'maxDate', sltDate);
+	}
+});
+<?php if(!(empty($sell))) { ?>
+// 路径配置
+require.config({
+	paths: {
+		echarts: 'http://echarts.baidu.com/build/dist'
+	}
+});
+
+// 使用
+require(
+		[
+			'echarts',
+			'echarts/chart/bar' // 使用柱状图就加载bar模块，按需加载
+		],
+		function (ec)
+		{
+			// 基于准备好的dom，初始化echarts图表
+			var myChart = ec.init(document.getElementById('main'));
+
+			var zrColor = require('zrender/tool/color');
+			var colorList = <?php echo $color; ?>;
+			var itemStyle = {
+				normal: {
+					color: function (params)
+					{
+						if (params.dataIndex < 0)
+						{
+							// for legend
+							return zrColor.lift(
+									colorList[colorList.length - 1], params.seriesIndex * 0.1
+							);
+						}
+						else
+						{
+							// for bar
+							return zrColor.lift(
+									colorList[params.dataIndex], params.seriesIndex * 0.1
+							);
+						}
+					}
+				}
+			};
+			var option = {
+				title     : {
+					text   : '<?php echo $text_org_sell_chart; ?>',
+				},
+				tooltip   : {
+					trigger        : 'axis',
+					backgroundColor: 'rgba(255,255,255,0.7)',
+					axisPointer    : {
+						type: 'shadow'
+					},
+					formatter      : function (params)
+					{
+						// for text color
+						var color = colorList[params[0].dataIndex];
+						var res = '<div style="color:' + color + '">';
+						res += '<strong>' + params[0].name + '</strong>'
+						for (var i = 0, l = params.length; i < l; i++)
+						{
+							res += '<br/>' + params[i].seriesName + ' : ' + params[i].value
+						}
+						res += '</div>';
+						return res;
+					}
+				},
+				legend    : {
+					x   : 'center',
+					data: ['<?php echo $text_sell_num; ?>', '<?php echo $text_renewal_num; ?>']
+				},
+				toolbox   : {
+					show   : true,
+					orient : 'vertical',
+					y      : 'center',
+					feature: {
+						mark       : {show: true},
+						dataView   : {show: true, readOnly: false},
+						restore    : {show: true},
+						saveAsImage: {show: true}
+					}
+				},
+				calculable: true,
+				grid      : {
+					y : 80,
+					y2: 40,
+					x2: 40
+				},
+				xAxis     : [
+					{
+						type: 'category',
+						data: <?php echo $orgid; ?>
+					}
+				],
+				yAxis     : [
+					{
+						type: 'value'
+					}
+				],
+				series    : [
+					{
+						name     : '<?php echo $text_sell_num; ?>',
+						type     : 'bar',
+						itemStyle: itemStyle,
+						data     : <?php echo $sell_chart; ?>
+					},
+					{
+						name     : '<?php echo $text_renewal_num; ?>',
+						type     : 'bar',
+						itemStyle: itemStyle,
+						data     : <?php echo $renewal_chart; ?>
+					}
+				]
+			};
+			myChart.setOption(option);
+		});
+<?php } ?>
+</script>
+<?php echo $page_footer; ?>

@@ -1,0 +1,81 @@
+<?php
+// Heading
+$_['heading_title'] = 'Gprs card batch';
+
+// Text
+$_['text_batch_sn']      = 'batch number';
+$_['text_batch_memo']    = 'Notes';
+$_['text_batch_shipper'] = 'consignor';
+$_['text_batch_name']    = 'batch name';
+$_['tex; t_city']        = 'sold to the city';
+$_['text_gprs_month']    = 'package flow';
+$_['text_time_added']    = 'add time';
+$_['text_card_amount']   = 'the number of cards';
+$_['text_action']        = 'Manager';
+$_['text_excel_select']  = 'Please select the column';
+$_['text_upload']        = 'Your file has been successfully uploaded! ';
+
+// Entry
+$_['entry_batch_sn']       = 'Batch Number:';
+$_['entry_batch_name']     = 'Batch name:';
+$_['entry_batch_memo']     = 'Batch Notes:';
+$_['entry_batch_shipper']  = 'shippers name:';
+$_['entry_org_name']       = 'Organization:';
+$_['entry_province']       = 'sold in the provinces:';
+$_['entry_city']           = 'sold to the city:';
+$_['entry_district']       = 'sold districts:';
+$_['entry_gprs_month']     = 'package flow:';
+$_['entry_live_month']     = 'effective number of months:';
+$_['entry_hint']           = ' &emsp;&emsp;eg: on the card is valid for six months';
+$_['entry_import_devices'] = 'Import number:';
+
+$_['entry_card_sn']      = 'traffic card number:';
+$_['entry_card_name']    = 'traffic card alias:';
+$_['entry_card_iccid']   = 'traffic card ICCID:';
+$_['entry_owner_name']   = 'Cardholder Name:';
+$_['entry_owner_gender'] = 'Card Master Gender:';
+$_['entry_owner_cdi']    = 'ID card master:';
+
+$_['entry_case_file']      = 'case file';
+$_['entry_click_download'] = 'Click to download';
+$_['entry_online_card']    = 'access card';
+$_['entry_iccid_card']     = 'ICCID card number';
+$_['entry_warm_prompt']    = 'Reminder:';
+$_['entry_example']        = 'Import card file case in the following format (card + Tab + Enter key + ICCID card number)';
+
+//note
+$_['note_confirm'] = 'Please make sure the input is correct!';
+
+// Error
+$_['error_permission']    = 'No permissions';
+$_['error_batch_sn']      = 'Please fill in the batch number';
+$_['error_batch_name']    = 'Please fill in the batch name';
+$_['error_batch_memo']    = 'Note the number of words can not exceed 200 words!';
+$_['error_batch_shipper'] = 'Please fill in the Name of the shipper';
+$_['error_org']           = 'Please select mechanism';
+$_['error_province']      = 'Please choose to sell to the province';
+$_['error_city']          = 'Please choose to sell to the city';
+$_['error_gprs_month']    = 'Please fill in the correct gprs value';
+$_['error_live_month']    = 'Please fill in the correct number of valid months';
+
+$_['error_file']      = 'Please select the correct file';
+$_['error_file_size'] = 'Please do not upload an empty file!';
+$_['error_iccid']     = 'Please select traffic card ICCID corresponding column';
+$_['error_upload']    = 'Please select a document! ';
+$_['error_filename']  = 'file name must be between 3-128 characters!';
+$_['error_exists']    = 'File does not exist!';
+$_['error_mask']      = 'file scrambling code must be 3-128 characters!';
+$_['error_file_type'] = 'Invalid file type!';
+$_['error_row']       = 'Please select the correct corresponding column or columns of data to ensure that the correct file';
+
+//Array
+$_['arr_live_month'] = array(
+	'0'   => 'Please select a valid month!',
+	'1'   => '1 month',
+	'3'   => '3 months',
+	'6'   => '6 months (half a year)',
+	'12'  => '12 months (one year) ',
+	'18'  => '18 months (a year and a half)',
+	'24'  => '24 months (two years) ',
+	'999' => 'Valid for unlimited'
+);

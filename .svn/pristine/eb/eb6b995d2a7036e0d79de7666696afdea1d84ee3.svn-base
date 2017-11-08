@@ -1,0 +1,85 @@
+<?php
+/**
+ * 慧佳工作室 -> hoojar studio
+ * 
+ * 模块: $Id$
+ * 简述: 执行SVN复制操作
+ * 作者: woods·zhang  ->  hoojar@163.com
+ * 版权: 2006-2012 慧佳工作室拥有此系统所有版权等知识产权
+ *
+ */
+$copy_list		= isset($argv[1]) ? $argv[1] : '';
+$copy_dir		= isset($argv[2]) ? $argv[2] : '';
+$remove_comment = isset($argv[3]) ? $argv[3] : false;
+if (!$copy_list || !$copy_dir){exit("copy list without or copy dir without\r\n");}
+
+$content = file_get_contents($copy_list);
+$reg = "/(^Modified : \/|Added : \/)(.+?)(\r|\n| |$)/im";
+preg_match_all($reg, $content, $m);
+$len = count($m[2]);
+for ($i = 0; $i < $len; ++$i){copy_file($m[2][$i]);}
+
+/**
+ * 自动创建目录,可递归创建或复制文件
+ *
+ * @param string $fn 文件地址与文件名
+ * @return boolean
+ */
+function copy_file($fn)
+{
+	if (!$fn){return false;}
+
+	$fn1 = "data/{$fn}";
+	$d = explode('/', $fn1);
+	$folder = '';
+
+	for ($i = 0; $i < count($d); ++$i)
+	{
+		if (strpos($d[$i], '.') !== false)
+		{
+			copy("{$GLOBALS['copy_dir']}/{$fn}", $fn1);
+			remove_comment($fn1);
+			break;
+		}
+
+		$folder .= "{$d[$i]}/";
+		if (!file_exists($folder))
+		{
+			if (!@mkdir($folder, 0700)){return false;}
+		}
+	}
+	return true;
+}
+
+/**
+ * 获取文件扩展名
+ *
+ * @param string $fname
+ */
+function get_ext($fname)
+{
+	$ext = strrchr($fname, '.');
+	return strtolower($ext);
+}
+
+/**
+ * 删除所有注解并格式化源代码并以原来文件名存储
+ *
+ * @param string $f 加处理的文件地址
+ * @return void
+ */
+function remove_comment($fname)
+{
+	if (get_ext($fname) != '.php' || !$GLOBALS['remove_comment']){return;}
+	$str = file_get_contents($fname);
+	if (!$str){return;}
+
+	$f = array('/\/\*(.*?)\*\//s', '/#[^\'|^"]*?$|\/\/[^\'|^"]*?$|\t|\r\n|\n/m', '/; /', '/ = /', '/, /', '/<\?php/', '/\?>/');
+	$r = array('', '', ';', '=', ',', "<?php\n", "\n?>");
+
+	$content = preg_replace($f, $r, $str);//执行替换注解处理
+
+	chmod($fname, 0777);//修改文件权限
+	file_put_contents($fname, $content);//写入已删除注解的代码
+}
+?>

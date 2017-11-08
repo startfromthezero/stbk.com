@@ -1,0 +1,65 @@
+<?php echo $page_header; ?>
+<a href="/app/main/info"><img src="/img/app/gprs-head.png" /></a>
+
+<div class="buttons" style="margin:20px;">
+	<div class="center"><a class="button btn-green" href="/app/main/topup"><?php echo $button_online_pay; ?></a></div>
+</div>
+<div id="tabs" class="htabs">
+	<a href="/app/main/info"><?php echo $text_my_card; ?></a>
+	<a class="selected" href="/app/main/paylog"><?php echo $text_card_paylog; ?></a>
+</div><br />
+<?php if(!empty($items)) { ?>
+<div id="resDiv">
+	<?php foreach($items as $item) { ?>
+	<div style="border-radius:10px;background:#F7F7F7;margin:10px;">
+		<table class="list">
+			<tr>
+				<td><?php echo $text_gprs_amount; ?></td>
+				<td><?php echo modules_funs::gpgsFormat($item['gprs_amount']); ?></td>
+			</tr>
+			<tr>
+				<td><?php echo $text_gprs_price; ?></td>
+				<td><?php echo $this->currency->format($item['gprs_price']); ?></td>
+			</tr>
+			<tr>
+				<td><?php echo $text_value_type; ?></td>
+				<td><?php echo $arr_pay_type[$item['pay_method']]; ?></td>
+			</tr>
+			<tr>
+				<td><?php echo $text_time_paid; ?></td>
+				<td><?php echo $item['time_paid']; ?></td>
+			</tr>
+		</table>
+	</div>
+	<?php } ?>
+</div>
+<?php } else { ?>
+<div class="noresult" style="padding-top:25%"><?php echo $error_no_pay; ?></div>
+<?php } ?>
+
+<script type="text/javascript">
+var $page = 1, $canLoad = true;
+var $loading = '<div id="loading" class="wait center"><?php echo $text_loading; ?><img src="/img/app/loading.gif" /></div>';
+$(window).scroll(function ()
+{
+	var scrollTop = $(this).scrollTop();//滚动条距离顶部的高度
+	var scrollHeight = $(document).height();//当前页面的总高度
+	var windowHeight = $(this).height();//当前可视的页面高度
+
+	if ($canLoad && scrollTop + windowHeight >= scrollHeight)
+	{
+		$canLoad = false;
+		$('#resDiv').append($loading);
+		$.post('/app/main/paylog', {'page': ++$page, 'ajax': 1}, function (result)
+		{
+			$('#loading').remove();
+			if (result != '')
+			{
+				$canLoad = true;
+				$('#resDiv').append(result);
+			}
+		});
+	}
+});
+</script>
+<?php echo $page_footer; ?>

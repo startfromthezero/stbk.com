@@ -1,0 +1,36 @@
+<?php
+// Heading
+$_['heading_title'] = 'Recharge detailed statistics';
+
+// Text
+$_['text_pay_report']   = 'Org recharge statistics';
+$_['text_card_iccid']   = 'ICCID card';
+$_['button_chart']      = 'Chart';
+$_['text_gprs_amount']  = 'gprs';
+$_['text_gprs_price']   = 'price';
+$_['text_pay_method']   = 'payment';
+$_['text_transfer_id']  = 'pay serial number';
+$_['text_is_paid']      = 'payment status';
+$_['text_time_paid']    = 'time of payment';
+$_['text_time_added']   = 'Top up time';
+$_['text_org_name']     = 'Organization';
+$_['text_pay_type']     = 'payment';
+$_['text_paid_log']     = 'paid record';
+$_['text_nopaid_log']   = 'No payment record';
+$_['text_paid_total']   = 'Amount paid';
+$_['text_nopaid_total'] = 'unpaid amount';
+$_['text_open']         = 'open details';
+$_['text_close']        = 'close details';
+
+$_['arr_pay_type'] = array(
+	'1' => 'micro-channel pay',
+	'2' => 'Alipay',
+	'3' => 'prepaid card',
+	'4' => 'bank transfer'
+);
+
+$_['arr_pay_status'] = array(
+	'0' => 'unpaid',
+	'1' => 'paid'
+);
+?>

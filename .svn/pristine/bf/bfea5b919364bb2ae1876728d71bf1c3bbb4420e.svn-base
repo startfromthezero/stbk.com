@@ -1,0 +1,108 @@
+<?php echo $page_header; ?>
+<div id="content">
+	<div class="breadcrumb">
+		<?php foreach ($breadcrumbs as $breadcrumb) { ?>
+		<?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+		<?php } ?>
+	</div>
+	<?php if ($error_warning) { ?><div class="warning"><?php echo $error_warning; ?></div><?php } ?>
+	<?php if ($success) { ?>
+	<div class="success"><?php echo $success; ?></div>
+	<?php } ?>
+	<div class="box">
+		<div class="heading">
+			<h1><img src="/view/image/setting.png" /> <?php echo $text_card_abnormal; ?></h1>
+			<div class="buttons" id="ctrl-div">
+				<a onclick="filter();" class="button btn-blue"><?php echo $button_filter; ?></a>
+				<a href="/gprs/abnormal" class="button btn-red"><?php echo $button_reset; ?></a>
+				<a onclick="$('form').submit();" class="button btn-yellow"><?php echo $button_export; ?></a>
+			</div>
+		</div>
+		<div class="content" onkeydown="enterPress()">
+			<form action="<?php echo $export; ?>" method="post" enctype="multipart/form-data" id="form">
+				<table class="list">
+					<thead>
+						<tr>
+							<td width="1" style="text-align: center;"><input type="checkbox"onclick="$('input[name*=\'selected\']').prop('checked', this.checked);" /></td>
+							<td><?php echo $text_card_iccid; ?></td>
+							<td><?php echo $text_user_firstname; ?></td>
+							<td><?php echo $text_time_last; ?></td>
+							<td><?php echo $text_used_total; ?></td>
+							<td><?php echo $text_used_month; ?></td>
+							<td><?php echo $text_max_unused; ?></td>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="filter center">
+							<td></td>
+							<td></td>
+							<td>
+								<select name="filter_org_id">
+									<option value="*"></option>
+									<?php foreach ($orgs as $k => $v) { ?>
+									<option value="<?php echo $k; ?>" <?php if ($k == $filter_org_id) { ?> selected="selected"<?php } ?>><?php echo $v; ?></option>
+									<?php } ?>
+								</select>
+							</td>
+							<td>
+								<select name="filter_abnormal_days" style="width:30%">
+								<?php for($i=1; $i < 10; $i++) { ?>
+									<option value="<?php echo $i; ?>" <?php if ($i == $filter_abnormal_days) { ?> selected="selected"<?php } ?>><?php echo $i; ?></option>
+								<?php } ?>
+								</select>
+								<?php echo $text_abnormal_days; ?>
+							</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<?php if (!empty($items)) { ?>
+						<?php foreach ($items as $item) { ?>
+						<tr>
+							<td><input type="checkbox" name="selected[]" value="<?php echo $item['card_id']; ?>" /></td>
+							<td><?php echo $item['card_iccid']; ?></td>
+							<td><?php echo isset($orgs[$item['org_id']]) ? $orgs[$item['org_id']] : ''; ?></td>
+							<td><?php echo $item['time_last']; ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['used_total']); ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['used_month']); ?></td>
+							<td><?php echo modules_funs::gpgsFormat($item['max_unused']); ?></td>
+						</tr>
+						<?php } ?>
+						<?php } else { ?>
+						<tr>
+							<td class="center" colspan="7"><?php echo $text_no_results; ?></td>
+						</tr>
+						<?php } ?>
+					</tbody>
+				</table>
+			</form>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function enterPress()
+{
+	if (event.keyCode == 13)
+	{
+		filter();
+	}
+}
+function filter()
+{
+	var url = '/gprs/abnormal?';
+	var filter_org_id = $('select[name=\'filter_org_id\']').val();
+	if (filter_org_id != '*')
+	{
+		url += '&filter_org_id=' + encodeURIComponent(filter_org_id);
+	}
+
+	var filter_abnormal_days = $('select[name=\'filter_abnormal_days\']').val();
+	if (filter_abnormal_days != '*')
+	{
+		url += '&filter_abnormal_days=' + encodeURIComponent(filter_abnormal_days);
+	}
+
+	location = url;
+}
+</script>
+<?php echo $page_footer; ?>

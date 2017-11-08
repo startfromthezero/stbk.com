@@ -1,0 +1,282 @@
+#!/opt/wenv/php/bin/php
+<?php
+/**
+ * 流量卡数据分析处理脚本
+ * 该脚本用于平台数据与联通数据校对修正，同时停止满足停号条件的流量卡使用
+ *
+ * 校对修正规则：
+ * （联通总流量 - 平台总流量）>= 20M
+ *
+ * 停号规则：
+ * 1.流量卡的流量已过期
+ * 2.联通总流量 > （赠送流量 + 累计充值流量）
+ */
+define('DIR_SITE', empty($_SERVER['DOCUMENT_ROOT']) ? dirname(__FILE__) : $_SERVER['DOCUMENT_ROOT']);
+define('DIR_ROOT', empty($_SERVER['DOCUMENT_ROOT']) ? dirname(dirname(__FILE__)) : dirname($_SERVER['DOCUMENT_ROOT']));
+require(DIR_ROOT . '/config/start.php');//程序开始处理
+
+/**
+ * 获取联通中间服务器上生成的流量卡数据文件
+ */
+$filename     = 'http://122.143.21.162/card/card_' . date('Ymd') . '.txt';
+$file_headers = get_headers($filename);
+if ($file_headers[0] == 'HTTP/1.1 404 Not Found')
+{
+	file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " No Exist File \n\n", FILE_APPEND);
+	exit;
+}
+
+$content = file_get_contents($filename);
+if (empty($content))
+{
+	file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " File Content Empty \n\n", FILE_APPEND);
+	exit;
+}
+
+/**
+ * 处理文件
+ * 格式：ICCID,状态,月流量,总流量\n
+ */
+$cards = explode("\n", trim($content));
+if (empty($cards))
+{
+	file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " File Content Error \n\n", FILE_APPEND);
+	exit;
+}
+
+file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " Start Execute: Total " . count($cards) . " Cards \n\n", FILE_APPEND);
+$stop_num = $update_num = 0;
+
+/**
+ * 循环比较流量卡数据，判断是否需更新停号处理
+ */
+$mem = new modules_mem();
+foreach ($cards as $card)
+{
+	$data      = explode(',', $card);
+	$card_info = getCardInfo($data[0]);
+	if (empty($card_info))
+	{
+		continue;
+	}
+
+	/**
+	 * 联通数据显示该卡已停号，但平台显示状态还是开启，则更新停号状态
+	 */
+	if ($data[1] == 1)
+	{
+		if ($card_info['unicom_stop'] == 0)
+		{
+			$card_info['unicom_stop'] = 1;
+			$card_info['time_stop']   = date('Y-m-d H:i:s');
+			updateCard($card_info);
+			$stop_num++;
+			file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " Stop Card {$card_info['card_iccid']}\n\n", FILE_APPEND);
+		}
+		else
+		{
+			/**
+			 * 已停号的历史数据，因有缓存存在，需重新计算可使用流量
+			 */
+			$card_info['gprs_month'] = 0;
+			$card_info['max_unused'] = 2048 + $card_info['pay_total'] - $card_info['unicom_total'];
+			$card_info['pay_unused'] = $card_info['max_unused'];
+			updateCard($card_info);
+		}
+		continue;
+	}
+
+	/**
+	 * 联通实际总流量 < 平台总流量，则只更新联通数据字段
+	 */
+	if ($data[3] <= $card_info['used_total'])
+	{
+		$card_info['unicom_month'] = $data[2];
+		$card_info['unicom_total'] = $data[3];
+		updateCard($card_info);
+		continue;
+	}
+
+	/**
+	 * 平台计算出的总流量已超标，则停号，更新联通数据字段
+	 */
+	if ($card_info['max_unused'] < 0)
+	{
+		if (cardStop($card_info['card_sn']))
+		{
+			$card_info['unicom_month'] = $data[2];
+			$card_info['unicom_total'] = $data[3];
+			$card_info['unicom_stop']  = 1;
+			$card_info['time_stop']    = date('Y-m-d H:i:s');
+			updateCard($card_info);
+			$stop_num++;
+			file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " Stop Card {$card_info['card_iccid']}\n\n", FILE_APPEND);
+		}
+		continue;
+	}
+
+	/**
+	 * 停号判断：平台流量已过期 或者 联通实际总流量 > （赠送流量 + 累计充值流量）
+	 */
+	if (strtotime($card_info['time_expire']) < time() || $data[3] > ($card_info['gprs_month'] + $card_info['pay_total']))
+	{
+		/**
+		 * 流量已过期，则赠送流量，最大可使用流量，可使用充值流量都需置为0
+		 * 流量超标，重新计算最大可使用流量，可使用充值流量
+		 */
+		if (strtotime($card_info['time_expire']) < time())
+		{
+			$card_info['max_unused'] = $card_info['pay_unused'] = 0;
+		}
+		else
+		{
+			$card_info['pay_unused'] = $card_info['gprs_month'] + $card_info['pay_total'] - $data[3];
+			$card_info['max_unused'] = $card_info['pay_unused'];
+		}
+
+		$card_info['gprs_month']   = 0;
+		$card_info['used_month']   = $data[2];
+		$card_info['used_total']   = $data[3];
+		$card_info['unicom_month'] = $data[2];
+		$card_info['unicom_total'] = $data[3];
+
+		if (cardStop($card_info['card_sn']))
+		{
+			$card_info['unicom_stop'] = 1;
+			$card_info['time_stop']   = date('Y-m-d H:i:s');
+			updateCard($card_info);
+			$stop_num++;
+			file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " Stop Card {$card_info['card_iccid']}\n\n", FILE_APPEND);
+		}
+		continue;
+	}
+
+	/**
+	 * （联通总流量 - 平台总流量）>= 20M 平台流量数据更新为联通数据，并重新计算该卡的最大可使用流量
+	 */
+	if ($data[3] - $card_info['used_total'] >= 20)
+	{
+		$update_data               = $card_info;//需要更新的数据组
+		$update_data['used_total'] = $data[3];//累计使用流量
+		$update_data['used_month'] = $data[2];//当前月使用流量
+		$update_data['time_last']  = date('Y-m-d H:i:s');//最后更新时间
+
+		/**
+		 * 重新计算最大可使用流量
+		 */
+		if ($update_data['used_total'] >= $card_info['gprs_month'])
+		{
+			/*
+			 * 判断数据表中总使用流量是否已经超过赠送流量
+			 */
+			if ($card_info['used_total'] >= $card_info['gprs_month'])
+			{
+				$update_data['pay_unused'] = $card_info['pay_unused'] - ($update_data['used_total'] - $card_info['used_total']);//扣充值流量
+			}
+			else
+			{
+				$update_data['pay_unused'] = $card_info['pay_unused'] - ($update_data['used_total'] - $card_info['gprs_month']);//先扣赠送流量再扣充值流量
+			}
+
+			$update_data['max_unused'] = $update_data['pay_unused'];//最大可使用流量等于购买未使用的流量
+			$update_data['gprs_month'] = 0;//当前使用一次性赠送流量方案，当使用的流量超过赠送流量时，则把赠送流量gprs_month置为0
+		}
+		else
+		{
+			$update_data['gprs_month'] = $card_info['gprs_month'];//赠送流量，带过去是为了方便统计当月超标流量
+			$update_data['max_unused'] = $card_info['pay_unused'] + ($card_info['gprs_month'] - $update_data['used_total']);//流量未超标
+		}
+		$card_info = $update_data;
+		saveMonthData($update_data);
+		$update_num++;
+	}
+
+	$card_info['unicom_month'] = $data[2];
+	$card_info['unicom_total'] = $data[3];
+	updateCard($card_info);
+}
+file_put_contents(DIR_ROOT . '/cmd/card_analyze.log', date('Y-m-d H:i:s') . " Execute Complete: {$stop_num} Stop Cards, {$update_num} Update Cards \n\n", FILE_APPEND);
+
+/**
+ * 获取流量卡信息
+ *
+ * @param $iccid
+ * @return mixed
+ */
+function getCardInfo($iccid)
+{
+	global $mem;
+	$data = $mem->mem_get("GPRS-CARD-{$iccid}");
+	if (empty($data))
+	{
+		$data = $mem->sdb()->fetch_row("SELECT * FROM cc_gprs_card WHERE card_iccid = '{$iccid}'");
+	}
+
+	return $data;
+}
+
+/**
+ * 更新流量卡信息
+ *
+ * @param array $data
+ * @return bool
+ */
+function updateCard($data = array())
+{
+	global $mem;
+	if (!$mem->mem_set("GPRS-CARD-{$data['card_iccid']}", $data, 0))
+	{
+		return $mem->mdb()->update('cc_gprs_card', $data, "card_id = '{$data['card_id']}'");
+	}
+
+	$mem->mem->push($mem->mem_type_res, 'GPRS-QUEUE', $data['card_iccid']);//将流量卡ICCID加入到队列中
+	return true;
+}
+
+/**
+ * 记录下流量卡每月流量使用情况，使用消息队列
+ *
+ * @param array $data
+ * @return bool|int
+ */
+function saveMonthData($data = array())
+{
+	global $mem;
+	$how_month  = date('Ym');
+	$month_over = $data['used_month'] - $data['gprs_month'];
+	$month_over = $month_over > 0 ? $month_over : 0;
+	$sql        = "INSERT INTO cc_gprs_stats SET card_id = '{$data['card_id']}', how_month = '{$how_month}',
+	month_used = '{$data['used_month']}', month_over = '{$month_over}', time_modify = NOW()
+	ON DUPLICATE KEY UPDATE month_used = '{$data['used_month']}', month_over = '{$month_over}', time_modify = NOW()";
+	if (!$mem->mem->push($mem->mem_type_sql, 'SQL-QUEUE', $sql))
+	{
+		$mdb = $mem->mdb();
+		$mem->mdb()->query($sql);
+
+		return $mdb->affected_rows();
+	}
+
+	return true;
+}
+
+/**
+ * 调用联通接口停号
+ *
+ * @param $number
+ * @return bool
+ */
+function cardStop($number)
+{
+	$params = array(
+		'cmd'          => 'action',
+		'serialNumber' => $number,
+		'timestamp'    => time(),
+		'token'        => md5(UNICOM_KEY . date('dHYm')),
+		'opFlag'       => 1
+	);
+	$result = json_decode(wcore_utils::curl(UNICOM_URL, $params, true), true);
+
+	return $result['status'] == 1;
+}
+
+?>

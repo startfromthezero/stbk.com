@@ -1,0 +1,25 @@
+<?php
+mb_internal_encoding('UTF-8'); //系统使用默认字符集为UTF-8
+ini_set('error_reporting', E_ALL | E_STRICT); //出错等级
+ini_set('display_errors', isset($_GET['error']) ? 1 : 1); //是否显示出错信息0关1开
+ini_set('date.timezone', 'Asia/Shanghai'); //设置时区
+define('DIR_SITE', empty($_SERVER['DOCUMENT_ROOT']) ? dirname(__FILE__) : $_SERVER['DOCUMENT_ROOT']);
+define('DIR_ROOT', empty($_SERVER['DOCUMENT_ROOT']) ? dirname(dirname(__FILE__)) : dirname($_SERVER['DOCUMENT_ROOT']));
+require(DIR_ROOT . '/config/start.php'); //loading start for here
+
+$db = wcore_object::mdb();
+$res = $db->fetch_all('SELECT * FROM cc_photo LIMIT 3');
+$str = json_encode($res);
+exit($str);
+
+$template = array(
+	'touser'      => 'fdfdfdf',
+	'template_id' => 'dfdfdfdfdf',
+	'url'         => 'http://www.baidu.com',
+	'topcolor'    => '#FFDDD',
+	'data'        => $data
+);
+
+$json_template = json_encode($template);
+exit(urldecode($json_template));
+?>
